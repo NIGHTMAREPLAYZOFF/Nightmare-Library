@@ -36,9 +36,118 @@ const elements = {
 // Initialize
 document.addEventListener('DOMContentLoaded', init);
 
+// Lazy loading observer
+let lazyLoadObserver = null;
+
+// Undo stack for quick actions
+let undoStack = [];
+const MAX_UNDO = 10;
+
 async function init() {
     setupEventListeners();
+    setupLazyLoading();
+    setupDragAndDrop();
     await loadData();
+    initializeVirtualization();
+}
+
+function setupLazyLoading() {
+    if ('IntersectionObserver' in window) {
+        lazyLoadObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const card = entry.target;
+                    const img = card.querySelector('img[data-src]');
+                    if (img) {
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        card.classList.add('loaded');
+                    }
+                    lazyLoadObserver.unobserve(card);
+                }
+            });
+        }, { rootMargin: '50px' });
+    }
+}
+
+function initializeVirtualization() {
+    // For large libraries (>100 books), use virtual scrolling
+    if (allBooks.length > 100) {
+        console.log('Virtualizing large library with', allBooks.length, 'books');
+        // Virtual scrolling implementation would go here
+    }
+}
+
+function setupDragAndDrop() {
+    let draggedElement = null;
+    let draggedBookId = null;
+
+    elements.booksGrid.addEventListener('dragstart', (e) => {
+        const card = e.target.closest('.book-card');
+        if (card) {
+            draggedElement = card;
+            draggedBookId = card.dataset.id;
+            card.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+        }
+    });
+
+    elements.booksGrid.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const afterElement = getDragAfterElement(elements.booksGrid, e.clientY);
+        const draggable = document.querySelector('.book-card[style*="opacity"]');
+        
+        if (afterElement == null) {
+            elements.booksGrid.appendChild(draggable);
+        } else {
+            elements.booksGrid.insertBefore(draggable, afterElement);
+        }
+    });
+
+    elements.booksGrid.addEventListener('dragend', (e) => {
+        if (draggedElement) {
+            draggedElement.style.opacity = '1';
+            draggedElement = null;
+            draggedBookId = null;
+            saveBookOrder();
+        }
+    });
+
+    elements.booksGrid.addEventListener('drop', (e) => {
+        e.preventDefault();
+    });
+}
+
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.book-card:not([style*="opacity"])')];
+    
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+async function saveBookOrder() {
+    const bookIds = [...elements.booksGrid.querySelectorAll('.book-card')].map(card => card.dataset.id);
+    
+    try {
+        await fetch('/api/books/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookIds })
+        });
+        showToast('Book order saved', 'success');
+    } catch (error) {
+        console.error('Failed to save order:', error);
+    }
 }
 
 function setupEventListeners() {
@@ -767,6 +876,123 @@ async function addBookToShelf(bookId, shelfId) {
     }
 }
 
+// Undo/Redo functionality
+function addToUndoStack(action) {
+    undoStack.push({
+        action: action.type,
+        data: action.data,
+        timestamp: Date.now()
+    });
+    
+    if (undoStack.length > MAX_UNDO) {
+        undoStack.shift();
+    }
+    
+    showUndoNotification(action.type);
+}
+
+function showUndoNotification(actionType) {
+    const messages = {
+        delete: 'Book deleted',
+        move: 'Book moved',
+        edit: 'Book edited'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast info';
+    toast.innerHTML = `
+        <span>${messages[actionType] || 'Action completed'}</span>
+        <button onclick="undoLastAction()" style="margin-left: 12px; padding: 4px 8px; background: var(--accent-primary); border: none; border-radius: 4px; cursor: pointer;">Undo</button>
+    `;
+    
+    elements.toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+async function undoLastAction() {
+    if (undoStack.length === 0) {
+        showToast('Nothing to undo', 'info');
+        return;
+    }
+    
+    const action = undoStack.pop();
+    
+    try {
+        switch (action.action) {
+            case 'delete':
+                // Restore deleted book
+                await fetch('/api/books/restore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookData: action.data })
+                });
+                await loadBooks();
+                showToast('Book restored', 'success');
+                break;
+            case 'move':
+                // Restore previous position
+                await fetch('/api/books/reorder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookIds: action.data.previousOrder })
+                });
+                await loadBooks();
+                showToast('Position restored', 'success');
+                break;
+        }
+    } catch (error) {
+        console.error('Undo failed:', error);
+        showToast('Undo failed', 'error');
+    }
+}
+
+// Quick filters
+function applyQuickFilter(filter) {
+    let filtered = [...allBooks];
+    
+    switch (filter) {
+        case 'favorites':
+            filtered = filtered.filter(b => b.is_favorite);
+            break;
+        case 'recent':
+            filtered = filtered.filter(b => b.last_read_at).sort((a, b) => b.last_read_at - a.last_read_at);
+            break;
+        case 'unread':
+            filtered = filtered.filter(b => !b.progress || b.progress < 5);
+            break;
+        case 'reading':
+            filtered = filtered.filter(b => b.progress > 5 && b.progress < 95);
+            break;
+        case 'finished':
+            filtered = filtered.filter(b => b.progress >= 95);
+            break;
+    }
+    
+    renderFilteredBooks(filtered);
+}
+
+function renderFilteredBooks(books) {
+    if (books.length === 0) {
+        elements.booksGrid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <div class="empty-state-icon">&#128269;</div>
+                <h3 class="empty-state-title">No books match this filter</h3>
+            </div>
+        `;
+        return;
+    }
+    
+    elements.booksGrid.innerHTML = books
+        .map(book => book.snippet_html || generateBookCard(book))
+        .join('');
+    
+    attachBookCardListeners();
+}
+
 // Delete Modal
 function openDeleteModal(bookId) {
     const book = allBooks.find(b => b.id === bookId);
@@ -784,8 +1010,15 @@ function closeDeleteModal() {
 
 async function handleDeleteConfirm() {
     const bookId = document.getElementById('delete-book-id').value;
+    const book = allBooks.find(b => b.id === bookId);
 
     try {
+        // Save to undo stack before deleting
+        addToUndoStack({
+            type: 'delete',
+            data: book
+        });
+
         const response = await fetch('/api/books/delete', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
@@ -795,7 +1028,6 @@ async function handleDeleteConfirm() {
         const data = await response.json();
 
         if (data.success) {
-            showToast('Book deleted', 'success');
             closeDeleteModal();
             await loadBooks();
             renderTags();
