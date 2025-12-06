@@ -3,6 +3,23 @@
 
 Complete guide to deploying Nightmare Library on Cloudflare Pages with cascading storage fallback.
 
+## Table of Contents
+1. [Overview](#overview)
+2. [Prerequisites](#prerequisites)
+3. [Create Cloudflare Resources](#1-create-cloudflare-resources)
+   - [D1 Database](#create-d1-database)
+   - [KV Namespaces](#create-kv-namespaces)
+4. [Configure Storage Providers](#2-configure-storage-providers)
+   - [Google Drive](#google-drive-setup-recommended-primary)
+   - [Dropbox](#dropbox-setup-secondary)
+   - [Mega.nz](#meganz-setup-tertiary)
+   - [GitHub](#github-setup-final-fallback---4gb-max)
+5. [Set Up Secrets](#3-set-up-secrets)
+6. [Deploy to Cloudflare Pages](#4-deploy-to-cloudflare-pages)
+7. [Storage Cascading Logic](#storage-cascading-logic)
+8. [Testing Locally](#testing-locally)
+9. [Monitoring Storage Usage](#monitoring-storage-usage)
+
 ## Overview
 
 This setup uses a cascading storage system that tries providers in order:
@@ -45,9 +62,17 @@ npx wrangler d1 execute nightmare-library-db --file=./migrations/0001_init.sql
 ```bash
 npx wrangler kv:namespace create "KV_SESSIONS"
 npx wrangler kv:namespace create "KV_CACHE"
+npx wrangler kv:namespace create "KV_RATE_LIMIT"
 ```
 
 Update `wrangler.toml` with the namespace IDs.
+
+**Quick Navigation:**
+- [D1 Database Setup](#create-d1-database)
+- [KV Namespaces](#create-kv-namespaces)
+- [Storage Providers](#configure-storage-providers)
+- [Secrets Configuration](#set-up-secrets)
+- [Deployment](#deploy-to-cloudflare-pages)
 
 ## 2. Configure Storage Providers
 
@@ -140,6 +165,7 @@ npx wrangler secret put GITHUB_REPO
    - **KV namespaces**: 
      - Variable `KV_SESSIONS` → your sessions namespace
      - Variable `KV_CACHE` → your cache namespace
+     - Variable `KV_RATE_LIMIT` → your rate limit namespace
 6. Add all secrets from Step 3 in **Settings → Environment Variables**
 
 ## Storage Cascading Logic
