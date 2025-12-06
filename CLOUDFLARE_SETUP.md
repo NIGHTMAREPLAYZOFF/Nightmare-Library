@@ -1,35 +1,84 @@
 # Cloudflare Setup Instructions
 
+## Quick Start Checklist
+
+- [ ] Create D1 database and update `wrangler.toml`
+- [ ] Create KV namespaces and update `wrangler.toml`
+- [ ] Run database migrations
+- [ ] Set all secrets in Cloudflare Dashboard
+- [ ] Connect GitHub repo to Cloudflare Pages
+- [ ] Deploy!
+
+---
+
 ## 1. Create D1 Database
 
-Run this command to create the D1 database:
+Run this command in your terminal:
 
 ```bash
 npx wrangler d1 create nightmare-library-db
 ```
 
-Copy the `database_id` from the output and paste it into `wrangler.toml` under `[[d1_databases]]`.
+You'll see output like this:
+```
+✅ Successfully created DB 'nightmare-library-db'
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nightmare-library-db"
+database_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"  <-- COPY THIS ID
+```
+
+**Open `wrangler.toml` and replace the `database_id` placeholder with your actual ID.**
+
+---
 
 ## 2. Create KV Namespaces
 
-Run these commands to create KV namespaces:
+Run these two commands:
 
 ```bash
 npx wrangler kv:namespace create "KV_SESSIONS"
+```
+
+Output:
+```
+🌀 Creating namespace with title "nightmare-library-KV_SESSIONS"
+✨ Success!
+Add the following to your wrangler.toml:
+id = "abc123def456ghi789jkl012mno345pq"  <-- COPY THIS ID
+```
+
+```bash
 npx wrangler kv:namespace create "KV_CACHE"
 ```
 
-Copy each `id` from the output and paste into `wrangler.toml` under the corresponding `[[kv_namespaces]]`.
+Output:
+```
+id = "xyz789abc123def456ghi012jkl345mn"  <-- COPY THIS ID
+```
+
+**Open `wrangler.toml` and replace both KV namespace `id` placeholders with your actual IDs.**
+
+---
 
 ## 3. Run Database Migrations
 
-After creating D1, run the SQL schema:
+After updating wrangler.toml with your IDs, run:
 
 ```bash
 npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql
 ```
 
+This creates all the tables for books, shelves, progress, etc.
+
+---
+
 ## 4. Set All Required Secrets
+
+Go to: **Cloudflare Dashboard → Pages → nightmare-library → Settings → Environment variables**
+
+Click "Add variable" for each secret below. Make sure to select "Encrypt" for sensitive values.
 
 ### SECRET: PASSWORD
 - **Purpose**: Master password for login authentication
@@ -95,17 +144,22 @@ npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_i
 
 ## 5. Connect GitHub to Cloudflare Pages
 
-1. Go to Cloudflare Dashboard → Pages
-2. Click "Create a project" → "Connect to Git"
+1. Go to **Cloudflare Dashboard → Pages**
+2. Click **"Create a project" → "Connect to Git"**
 3. Authorize GitHub and select your repository
 4. Configure build settings:
-   - Project name: `nightmare-library`
-   - Production branch: `main`
-   - Build command: `npm run build` (or leave empty if no build needed)
-   - Build output directory: `/cloudflare-version`
-5. Go to Settings → Functions → Add bindings for D1 and KV
-6. Go to Settings → Environment Variables → Add all secrets
-7. Deploy!
+   - **Project name**: `nightmare-library`
+   - **Production branch**: `main`
+   - **Build command**: (leave empty - no build needed)
+   - **Build output directory**: `.` (root directory)
+5. After first deploy, go to **Settings → Functions → D1 database bindings**:
+   - Variable name: `DB`
+   - D1 database: Select `nightmare-library-db`
+6. Add **KV namespace bindings**:
+   - Variable name: `KV_SESSIONS` → Select your sessions namespace
+   - Variable name: `KV_CACHE` → Select your cache namespace
+7. Go to **Settings → Environment Variables** and add all secrets from Step 4
+8. Trigger a new deployment!
 
 ## Summary of All Secrets
 
@@ -136,8 +190,7 @@ This ensures your library remains functional even if your primary storage provid
 ## Testing Locally
 
 ```bash
-cd cloudflare-version
-npx wrangler pages dev
+npx wrangler pages dev .
 ```
 
 Create a `.dev.vars` file with your secrets for local testing:
