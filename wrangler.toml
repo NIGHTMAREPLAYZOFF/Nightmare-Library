@@ -18,12 +18,20 @@ database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 # Copy the id from the output and paste below
 [[kv_namespaces]]
 binding = "KV_SESSIONS"
-id = "REPLACE_WITH_YOUR_KV_SESSIONS_ID"
+id = "your-sessions-kv-id"
+preview_id = "your-sessions-preview-kv-id"
 
 # After running: npx wrangler kv:namespace create "KV_CACHE"
 [[kv_namespaces]]
 binding = "KV_CACHE"
 id = "REPLACE_WITH_YOUR_KV_CACHE_ID"
+preview_id = "REPLACE_WITH_YOUR_KV_CACHE_PREVIEW_ID"
+
+# After running: npx wrangler kv:namespace create "KV_RATE_LIMIT"
+[[kv_namespaces]]
+binding = "KV_RATE_LIMIT"
+id = "your-rate-limit-kv-id"
+preview_id = "your-rate-limit-preview-kv-id"
 
 # Environment Variables (non-secret)
 [vars]

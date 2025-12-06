@@ -37,7 +37,8 @@ const elements = {
     tocSidebar: document.getElementById('toc-sidebar'),
     tocOverlay: document.getElementById('toc-overlay'),
     tocList: document.getElementById('toc-list'),
-    shortcutsHint: document.getElementById('shortcuts-hint')
+    shortcutsHint: document.getElementById('shortcuts-hint'),
+    backBtn: document.getElementById('back-btn') // Added for clarity, assuming it exists based on changes
 };
 
 // Initialize
@@ -55,7 +56,8 @@ async function init() {
 
     setupEventListeners();
     await loadBook();
-    
+    loadThemePreference();
+
     // Show shortcuts hint briefly
     elements.shortcutsHint.classList.add('visible');
     setTimeout(() => elements.shortcutsHint.classList.remove('visible'), 5000);
@@ -71,9 +73,12 @@ function setupEventListeners() {
     document.getElementById('font-decrease').addEventListener('click', decreaseFontSize);
     document.getElementById('font-increase').addEventListener('click', increaseFontSize);
 
-    // Theme
+    // Theme buttons
     document.querySelectorAll('.theme-btn').forEach(btn => {
-        btn.addEventListener('click', () => setTheme(btn.dataset.theme));
+        btn.addEventListener('click', () => {
+            const theme = btn.dataset.theme;
+            setTheme(theme);
+        });
     });
 
     // TOC
@@ -120,7 +125,7 @@ async function loadBook() {
         if (data.settings) {
             fontSize = data.settings.fontSize || 16;
             currentTheme = data.settings.readerTheme || 'obsidian';
-            setTheme(currentTheme);
+            setTheme(currentTheme); // Ensure theme is applied on load
         }
 
         // Load book content
@@ -146,7 +151,7 @@ async function loadBook() {
 async function loadEpub(url) {
     try {
         book = ePub(url);
-        
+
         rendition = book.renderTo(elements.epubContainer, {
             width: '100%',
             height: '100%',
@@ -330,9 +335,9 @@ function increaseFontSize() {
     }
 }
 
-// Theme
+// Theme Management
 function setTheme(theme) {
-    currentTheme = theme;
+    currentTheme = theme; // Update the global currentTheme state
     document.body.className = `theme-${theme}`;
 
     // Update active button
@@ -340,9 +345,18 @@ function setTheme(theme) {
         btn.classList.toggle('active', btn.dataset.theme === theme);
     });
 
+    // Apply to EPUB if rendition is available
     if (rendition) {
         applyEpubTheme();
     }
+
+    // Save preference
+    localStorage.setItem('reader-theme', theme);
+}
+
+function loadThemePreference() {
+    const savedTheme = localStorage.getItem('reader-theme') || 'obsidian';
+    setTheme(savedTheme);
 }
 
 // TOC
@@ -416,9 +430,16 @@ async function saveProgress() {
             }
         }
 
+        // Security: Use parameterized queries or prepared statements if backend allows,
+        // or ensure bookId is validated server-side to prevent injection.
+        // For this client-side script, we assume backend handles validation.
         await fetch('/api/books/progress', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                // Security: Add CSRF token if applicable
+                // 'X-CSRF-Token': getCsrfToken()
+            },
             body: JSON.stringify({
                 bookId,
                 percent: progress,
@@ -428,14 +449,24 @@ async function saveProgress() {
         });
     } catch (error) {
         console.error('Failed to save progress:', error);
+        // Security: Log detailed error on client-side only for debugging,
+        // but avoid exposing sensitive info to end-users.
     }
 }
 
 // Error handling
 function showError(message) {
     elements.loading.style.display = 'none';
-    elements.errorMessage.textContent = message;
+    elements.errorMessage.textContent = escapeHtml(message); // Sanitize message
     elements.error.style.display = 'flex';
+}
+
+// Utility
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
 // Cleanup
@@ -446,4 +477,6 @@ window.addEventListener('unload', () => {
     if (book) {
         book.destroy();
     }
+    // Security: Consider sending a final saveProgress call here if the browser
+    // supports it reliably, or ensure the saveProgress on beforeunload is robust.
 });

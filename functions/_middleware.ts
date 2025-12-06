@@ -49,11 +49,43 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // Validate session
     try {
-      const session = await env.KV_SESSIONS.get(sessionToken);
-      if (!session) {
+      const sessionData = await env.KV_SESSIONS.get(sessionToken);
+      if (!sessionData) {
         // Session expired or invalid
         if (path.startsWith('/api/')) {
           return new Response(JSON.stringify({ success: false, message: 'Session expired' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        return Response.redirect(new URL('/', request.url).toString(), 302);
+      }
+
+      // Parse session and validate metadata
+      const session = JSON.parse(sessionData);
+      const clientIP = request.headers.get('CF-Connecting-IP') || 
+                       request.headers.get('X-Forwarded-For') || 
+                       'unknown';
+      const userAgent = request.headers.get('User-Agent') || 'unknown';
+
+      // Check if session expired
+      if (session.expiresAt && Date.now() > session.expiresAt) {
+        await env.KV_SESSIONS.delete(sessionToken);
+        if (path.startsWith('/api/')) {
+          return new Response(JSON.stringify({ success: false, message: 'Session expired' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        return Response.redirect(new URL('/', request.url).toString(), 302);
+      }
+
+      // Validate IP and User Agent for session hijacking protection
+      if (session.ip !== clientIP || session.userAgent !== userAgent) {
+        // Session potentially hijacked - invalidate it
+        await env.KV_SESSIONS.delete(sessionToken);
+        if (path.startsWith('/api/')) {
+          return new Response(JSON.stringify({ success: false, message: 'Session invalid' }), {
             status: 401,
             headers: { 'Content-Type': 'application/json' }
           });
