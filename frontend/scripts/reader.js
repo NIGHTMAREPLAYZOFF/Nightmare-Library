@@ -1,0 +1,449 @@
+/**
+ * Nightmare Library - Reader Script
+ * Handles EPUB and PDF rendering with navigation and progress tracking
+ */
+
+// State
+let book = null;
+let rendition = null;
+let pdfDoc = null;
+let currentPage = 1;
+let totalPages = 1;
+let progress = 0;
+let bookId = null;
+let fileType = null;
+let fontSize = 16;
+let currentTheme = 'obsidian';
+let isFullscreen = false;
+let autoSaveInterval = null;
+
+// DOM Elements
+const elements = {
+    loading: document.getElementById('reader-loading'),
+    error: document.getElementById('reader-error'),
+    errorMessage: document.getElementById('error-message'),
+    container: document.getElementById('reader-container'),
+    header: document.getElementById('reader-header'),
+    nav: document.getElementById('reader-nav'),
+    bookTitle: document.getElementById('book-title'),
+    progressFill: document.getElementById('progress-fill'),
+    progressText: document.getElementById('progress-text'),
+    progressCircle: document.getElementById('progress-circle'),
+    progressRingText: document.getElementById('progress-ring-text'),
+    pageIndicator: document.getElementById('page-indicator'),
+    epubContainer: document.getElementById('epub-container'),
+    pdfContainer: document.getElementById('pdf-container'),
+    pdfCanvas: document.getElementById('pdf-canvas'),
+    tocSidebar: document.getElementById('toc-sidebar'),
+    tocOverlay: document.getElementById('toc-overlay'),
+    tocList: document.getElementById('toc-list'),
+    shortcutsHint: document.getElementById('shortcuts-hint')
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+    // Get book ID from URL
+    const params = new URLSearchParams(window.location.search);
+    bookId = params.get('id');
+
+    if (!bookId) {
+        showError('No book specified');
+        return;
+    }
+
+    setupEventListeners();
+    await loadBook();
+    
+    // Show shortcuts hint briefly
+    elements.shortcutsHint.classList.add('visible');
+    setTimeout(() => elements.shortcutsHint.classList.remove('visible'), 5000);
+}
+
+function setupEventListeners() {
+    // Navigation
+    document.getElementById('back-btn').addEventListener('click', goToLibrary);
+    document.getElementById('prev-btn').addEventListener('click', prevPage);
+    document.getElementById('next-btn').addEventListener('click', nextPage);
+
+    // Font controls
+    document.getElementById('font-decrease').addEventListener('click', decreaseFontSize);
+    document.getElementById('font-increase').addEventListener('click', increaseFontSize);
+
+    // Theme
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.addEventListener('click', () => setTheme(btn.dataset.theme));
+    });
+
+    // TOC
+    document.getElementById('toc-btn').addEventListener('click', toggleToc);
+    document.getElementById('toc-close').addEventListener('click', closeToc);
+    elements.tocOverlay.addEventListener('click', closeToc);
+
+    // Fullscreen
+    document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboard);
+
+    // Auto-save progress
+    autoSaveInterval = setInterval(saveProgress, 30000);
+
+    // Save on page unload
+    window.addEventListener('beforeunload', saveProgress);
+}
+
+async function loadBook() {
+    try {
+        // Fetch book details
+        const response = await fetch(`/api/books/get?id=${bookId}`);
+        const data = await response.json();
+
+        if (!data.success) {
+            showError(data.message || 'Failed to load book');
+            return;
+        }
+
+        const bookData = data.book;
+        elements.bookTitle.textContent = bookData.title;
+        document.title = `${bookData.title} - Nightmare Library`;
+        fileType = bookData.file_type;
+
+        // Load saved progress
+        if (bookData.progress) {
+            progress = bookData.progress.percent || 0;
+            currentPage = bookData.progress.current_page || 1;
+        }
+
+        // Load settings
+        if (data.settings) {
+            fontSize = data.settings.fontSize || 16;
+            currentTheme = data.settings.readerTheme || 'obsidian';
+            setTheme(currentTheme);
+        }
+
+        // Load book content
+        if (fileType === 'epub') {
+            await loadEpub(`/api/books/file/${bookId}`);
+        } else if (fileType === 'pdf') {
+            await loadPdf(`/api/books/file/${bookId}`);
+        } else {
+            showError('Unsupported file format');
+            return;
+        }
+
+        // Show reader
+        elements.loading.style.display = 'none';
+        elements.container.style.display = 'flex';
+
+    } catch (error) {
+        console.error('Error loading book:', error);
+        showError('Failed to load book');
+    }
+}
+
+async function loadEpub(url) {
+    try {
+        book = ePub(url);
+        
+        rendition = book.renderTo(elements.epubContainer, {
+            width: '100%',
+            height: '100%',
+            spread: 'none',
+            flow: 'paginated'
+        });
+
+        // Apply theme
+        applyEpubTheme();
+
+        // Display book
+        await rendition.display();
+
+        // Navigate to saved position
+        if (progress > 0) {
+            const location = book.locations.cfiFromPercentage(progress / 100);
+            if (location) {
+                await rendition.display(location);
+            }
+        }
+
+        // Generate locations for progress tracking
+        await book.locations.generate(1024);
+
+        // Load TOC
+        const toc = await book.loaded.navigation;
+        renderToc(toc.toc);
+
+        // Update progress on page change
+        rendition.on('relocated', (location) => {
+            if (location && book.locations.length()) {
+                progress = Math.round(book.locations.percentageFromCfi(location.start.cfi) * 100);
+                updateProgressUI();
+            }
+        });
+
+        elements.pdfContainer.style.display = 'none';
+        elements.epubContainer.style.display = 'block';
+
+    } catch (error) {
+        console.error('EPUB load error:', error);
+        throw error;
+    }
+}
+
+async function loadPdf(url) {
+    try {
+        const loadingTask = pdfjsLib.getDocument(url);
+        pdfDoc = await loadingTask.promise;
+        totalPages = pdfDoc.numPages;
+
+        elements.epubContainer.style.display = 'none';
+        elements.pdfContainer.style.display = 'flex';
+
+        // Render saved page or first page
+        await renderPdfPage(currentPage);
+        updateProgressUI();
+
+    } catch (error) {
+        console.error('PDF load error:', error);
+        throw error;
+    }
+}
+
+async function renderPdfPage(pageNum) {
+    if (!pdfDoc || pageNum < 1 || pageNum > totalPages) return;
+
+    currentPage = pageNum;
+    const page = await pdfDoc.getPage(pageNum);
+
+    const canvas = elements.pdfCanvas;
+    const ctx = canvas.getContext('2d');
+
+    // Calculate scale to fit viewport
+    const viewport = page.getViewport({ scale: 1 });
+    const containerWidth = elements.pdfContainer.clientWidth - 40;
+    const scale = containerWidth / viewport.width;
+    const scaledViewport = page.getViewport({ scale });
+
+    canvas.width = scaledViewport.width;
+    canvas.height = scaledViewport.height;
+
+    await page.render({
+        canvasContext: ctx,
+        viewport: scaledViewport
+    }).promise;
+
+    progress = Math.round((currentPage / totalPages) * 100);
+    elements.pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+    updateProgressUI();
+}
+
+function renderToc(toc) {
+    if (!toc || toc.length === 0) {
+        elements.tocList.innerHTML = '<p style="padding: 20px; color: #666;">No table of contents available</p>';
+        return;
+    }
+
+    const renderItems = (items, nested = false) => {
+        return items.map(item => `
+            <div class="toc-item ${nested ? 'nested' : ''}" data-href="${item.href}">
+                ${item.label}
+            </div>
+            ${item.subitems ? renderItems(item.subitems, true) : ''}
+        `).join('');
+    };
+
+    elements.tocList.innerHTML = renderItems(toc);
+
+    // Attach click handlers
+    elements.tocList.querySelectorAll('.toc-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const href = item.dataset.href;
+            if (rendition && href) {
+                rendition.display(href);
+                closeToc();
+            }
+        });
+    });
+}
+
+function applyEpubTheme() {
+    if (!rendition) return;
+
+    const themes = {
+        obsidian: { body: { background: '#0a0a0a', color: '#e0e0e0' } },
+        sepia: { body: { background: '#f4ecd8', color: '#5c4b37' } },
+        light: { body: { background: '#ffffff', color: '#212121' } }
+    };
+
+    rendition.themes.register('custom', themes[currentTheme] || themes.obsidian);
+    rendition.themes.select('custom');
+    rendition.themes.fontSize(`${fontSize}px`);
+}
+
+function updateProgressUI() {
+    elements.progressFill.style.width = `${progress}%`;
+    elements.progressText.textContent = `${progress}%`;
+    elements.progressCircle.setAttribute('stroke-dasharray', `${progress}, 100`);
+    elements.progressRingText.textContent = `${progress}%`;
+}
+
+// Navigation
+function prevPage() {
+    if (fileType === 'epub' && rendition) {
+        rendition.prev();
+    } else if (fileType === 'pdf' && currentPage > 1) {
+        renderPdfPage(currentPage - 1);
+    }
+}
+
+function nextPage() {
+    if (fileType === 'epub' && rendition) {
+        rendition.next();
+    } else if (fileType === 'pdf' && currentPage < totalPages) {
+        renderPdfPage(currentPage + 1);
+    }
+}
+
+function goToLibrary() {
+    saveProgress();
+    window.location.href = '/frontend/dashboard.html';
+}
+
+// Font size
+function decreaseFontSize() {
+    if (fontSize > 12) {
+        fontSize -= 2;
+        if (rendition) {
+            rendition.themes.fontSize(`${fontSize}px`);
+        }
+    }
+}
+
+function increaseFontSize() {
+    if (fontSize < 28) {
+        fontSize += 2;
+        if (rendition) {
+            rendition.themes.fontSize(`${fontSize}px`);
+        }
+    }
+}
+
+// Theme
+function setTheme(theme) {
+    currentTheme = theme;
+    document.body.className = `theme-${theme}`;
+
+    // Update active button
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.theme === theme);
+    });
+
+    if (rendition) {
+        applyEpubTheme();
+    }
+}
+
+// TOC
+function toggleToc() {
+    elements.tocSidebar.classList.toggle('open');
+    elements.tocOverlay.classList.toggle('visible');
+}
+
+function closeToc() {
+    elements.tocSidebar.classList.remove('open');
+    elements.tocOverlay.classList.remove('visible');
+}
+
+// Fullscreen
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+        isFullscreen = true;
+        document.body.classList.add('fullscreen');
+    } else {
+        document.exitFullscreen();
+        isFullscreen = false;
+        document.body.classList.remove('fullscreen');
+    }
+}
+
+// Keyboard shortcuts
+function handleKeyboard(e) {
+    // Don't trigger if in input
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    switch (e.key.toLowerCase()) {
+        case 'j':
+        case 'arrowleft':
+            e.preventDefault();
+            prevPage();
+            break;
+        case 'k':
+        case 'arrowright':
+            e.preventDefault();
+            nextPage();
+            break;
+        case 'l':
+            e.preventDefault();
+            goToLibrary();
+            break;
+        case 'f':
+            e.preventDefault();
+            toggleFullscreen();
+            break;
+        case 'escape':
+            if (elements.tocSidebar.classList.contains('open')) {
+                closeToc();
+            } else if (isFullscreen) {
+                toggleFullscreen();
+            }
+            break;
+    }
+}
+
+// Progress saving
+async function saveProgress() {
+    if (!bookId) return;
+
+    try {
+        let currentChapter = null;
+        if (rendition && rendition.location) {
+            const loc = rendition.location;
+            if (loc.start && loc.start.href) {
+                currentChapter = loc.start.href;
+            }
+        }
+
+        await fetch('/api/books/progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                bookId,
+                percent: progress,
+                currentPage: fileType === 'pdf' ? currentPage : null,
+                currentChapter
+            })
+        });
+    } catch (error) {
+        console.error('Failed to save progress:', error);
+    }
+}
+
+// Error handling
+function showError(message) {
+    elements.loading.style.display = 'none';
+    elements.errorMessage.textContent = message;
+    elements.error.style.display = 'flex';
+}
+
+// Cleanup
+window.addEventListener('unload', () => {
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+    }
+    if (book) {
+        book.destroy();
+    }
+});

@@ -4,10 +4,8 @@ A private, self-hosted digital library for managing and reading EPUB and PDF boo
 
 ## Project Structure
 
-This project contains two versions:
-
-- **`/cloudflare-version`** - Production-ready for Cloudflare Pages deployment
-- **`/replit-version`** - Development version for local testing in Replit
+- **Root** - Cloudflare Pages version (production-ready)
+- **`/replit-version`** - Replit development version for local testing
 
 ## Features
 
@@ -21,18 +19,20 @@ This project contains two versions:
 - Multi-provider storage (R2, S3, GCS, Backblaze)
 - GitHub fallback storage for reliability
 
-## Quick Start (Replit Development)
-
-```bash
-npm run dev
-```
-
 ## Cloudflare Deployment
 
-See `cloudflare-version/CLOUDFLARE_SETUP.md` for complete deployment instructions.
+See `CLOUDFLARE_SETUP.md` for complete deployment instructions.
 
 ```bash
-npm run cf:deploy
+# Deploy to Cloudflare Pages
+npm run deploy
+```
+
+## Replit Development
+
+```bash
+# Run the Replit development version
+npm run replit:dev
 ```
 
 ## Theme
