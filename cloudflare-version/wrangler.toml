@@ -1,0 +1,39 @@
+name = "nightmare-library"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Pages configuration
+pages_build_output_dir = "./"
+
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "nightmare-library-db"
+database_id = "YOUR_D1_DATABASE_ID_HERE"
+
+# KV Namespace Bindings
+[[kv_namespaces]]
+binding = "KV_SESSIONS"
+id = "YOUR_KV_SESSIONS_ID_HERE"
+
+[[kv_namespaces]]
+binding = "KV_CACHE"
+id = "YOUR_KV_CACHE_ID_HERE"
+
+# Environment Variables (non-secret)
+[vars]
+ENVIRONMENT = "production"
+
+# Secrets are set via CLI or dashboard, not in this file
+# Required secrets:
+# - PASSWORD (master login password)
+# - JWT_SECRET (token signing key)
+# - STORAGE_PROVIDER_1_TYPE (r2, s3, gcs, backblaze)
+# - STORAGE_PROVIDER_1_BUCKET
+# - STORAGE_PROVIDER_1_ACCESS_KEY
+# - STORAGE_PROVIDER_1_SECRET_KEY
+# - STORAGE_PROVIDER_1_ENDPOINT (optional)
+# - STORAGE_PROVIDER_1_REGION (optional)
+# - GITHUB_FALLBACK_TOKEN (for GitHub storage fallback)
+# - GITHUB_FALLBACK_OWNER (GitHub username for fallback repos)
+# See CLOUDFLARE_SETUP.md for complete instructions
