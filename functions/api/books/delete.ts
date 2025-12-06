@@ -1,9 +1,9 @@
 /**
  * Delete Book API
- * DELETE /api/books/delete - Cascade delete book
+ * DELETE /api/books/delete - Delete a book
  */
 
-import { deleteFile, getStorageConfig, getGitHubFallbackConfig, type StorageConfig } from '../../storage-proxy';
+import { deleteFile, getStorageConfigs, StorageConfig } from '../../storage-proxy';
 
 interface Env {
   DB: D1Database;
@@ -50,12 +50,25 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
       });
     }
 
-    // Delete from storage
-    let storageConfig: StorageConfig;
-    if (book.storage_provider === 'github') {
-      storageConfig = getGitHubFallbackConfig(env as unknown as Record<string, string>);
-    } else {
-      storageConfig = getStorageConfig(env as unknown as Record<string, string>);
+    // Delete from storage using the new storage configs
+    const storageConfigs = getStorageConfigs(env as unknown as Record<string, string>);
+    let storageConfig: StorageConfig | undefined;
+
+    for (const config of storageConfigs) {
+      if (config.type === book.storage_provider) {
+        storageConfig = config;
+        break;
+      }
+    }
+
+    if (!storageConfig) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        message: `Storage provider ${book.storage_provider} not found` 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     await deleteFile(storageConfig, book.storage_id);
