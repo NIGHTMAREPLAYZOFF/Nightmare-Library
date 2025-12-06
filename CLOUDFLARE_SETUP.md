@@ -1,148 +1,131 @@
-# Cloudflare Setup Instructions
 
-## Quick Start Checklist
+# Nightmare Library - Cloudflare Pages Setup Guide
 
-- [ ] Create D1 database and update `wrangler.toml`
-- [ ] Create KV namespaces and update `wrangler.toml`
-- [ ] Run database migrations
-- [ ] Set all secrets in Cloudflare Dashboard
-- [ ] Connect GitHub repo to Cloudflare Pages
-- [ ] Deploy!
+Complete guide to deploying Nightmare Library on Cloudflare Pages with cascading storage fallback.
 
----
+## Overview
 
-## 1. Create D1 Database
+This setup uses a cascading storage system that tries providers in order:
+1. **Google Drive** (Primary)
+2. **Dropbox** (Secondary)
+3. **Mega.nz** (Tertiary)
+4. **GitHub** (Final fallback - 4GB limit, private repos)
 
-Run this command in your terminal:
+## Prerequisites
+
+- Cloudflare account (free tier works)
+- GitHub account
+- At least one storage provider account (Google Drive, Dropbox, Mega.nz, or GitHub)
+
+## 1. Create Cloudflare Resources
+
+### Create D1 Database
 
 ```bash
 npx wrangler d1 create nightmare-library-db
 ```
 
-You'll see output like this:
-```
-✅ Successfully created DB 'nightmare-library-db'
+Copy the database ID from the output and update `wrangler.toml`:
 
+```toml
 [[d1_databases]]
 binding = "DB"
 database_name = "nightmare-library-db"
-database_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"  <-- COPY THIS ID
+database_id = "your-database-id-here"
 ```
 
-**Open `wrangler.toml` and replace the `database_id` placeholder with your actual ID.**
+### Initialize Database Schema
 
----
+```bash
+npx wrangler d1 execute nightmare-library-db --file=./migrations/0001_init.sql
+```
 
-## 2. Create KV Namespaces
-
-Run these two commands:
+### Create KV Namespaces
 
 ```bash
 npx wrangler kv:namespace create "KV_SESSIONS"
-```
-
-Output:
-```
-🌀 Creating namespace with title "nightmare-library-KV_SESSIONS"
-✨ Success!
-Add the following to your wrangler.toml:
-id = "abc123def456ghi789jkl012mno345pq"  <-- COPY THIS ID
-```
-
-```bash
 npx wrangler kv:namespace create "KV_CACHE"
 ```
 
-Output:
-```
-id = "xyz789abc123def456ghi012jkl345mn"  <-- COPY THIS ID
-```
+Update `wrangler.toml` with the namespace IDs.
 
-**Open `wrangler.toml` and replace both KV namespace `id` placeholders with your actual IDs.**
+## 2. Configure Storage Providers
 
----
+### Google Drive Setup (Recommended Primary)
 
-## 3. Run Database Migrations
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project
+3. Enable Google Drive API
+4. Create OAuth 2.0 credentials
+5. Generate an access token
+6. (Optional) Create a specific folder for books and get its ID
 
-After updating wrangler.toml with your IDs, run:
+**Required Secrets:**
+- `GDRIVE_ACCESS_TOKEN` - OAuth2 access token
+- `GDRIVE_FOLDER_ID` (optional) - Folder ID for book storage
+
+### Dropbox Setup (Secondary)
+
+1. Go to [Dropbox App Console](https://www.dropbox.com/developers/apps)
+2. Create a new app with "Full Dropbox" access
+3. Generate an access token
+
+**Required Secrets:**
+- `DROPBOX_ACCESS_TOKEN` - App access token
+- `DROPBOX_PATH` (optional) - Base path for storage (e.g., `/NightmareLibrary`)
+
+### Mega.nz Setup (Tertiary)
+
+1. Create a [Mega.nz account](https://mega.nz/)
+2. Use your login credentials
+
+**Required Secrets:**
+- `MEGA_EMAIL` - Your Mega.nz email
+- `MEGA_PASSWORD` - Your Mega.nz password
+- `MEGA_FOLDER_ID` (optional) - Specific folder for storage
+
+### GitHub Setup (Final Fallback - 4GB Max)
+
+1. Go to GitHub → Settings → Developer Settings → Personal Access Tokens
+2. Generate new token (classic) with `repo` scope
+3. The system will create a private repo named `nightmare-library-storage` (or custom name)
+
+**Required Secrets:**
+- `GITHUB_TOKEN` - Personal Access Token with `repo` scope
+- `GITHUB_OWNER` - Your GitHub username
+- `GITHUB_REPO` (optional) - Custom repo name (defaults to `nightmare-library-storage`)
+
+**Note:** GitHub storage is capped at 4GB total and will not exceed this limit.
+
+## 3. Set Up Secrets
+
+### Required Secrets
 
 ```bash
-npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql
+# Authentication
+npx wrangler secret put PASSWORD
+npx wrangler secret put JWT_SECRET
+
+# Google Drive (if using)
+npx wrangler secret put GDRIVE_ACCESS_TOKEN
+npx wrangler secret put GDRIVE_FOLDER_ID
+
+# Dropbox (if using)
+npx wrangler secret put DROPBOX_ACCESS_TOKEN
+npx wrangler secret put DROPBOX_PATH
+
+# Mega.nz (if using)
+npx wrangler secret put MEGA_EMAIL
+npx wrangler secret put MEGA_PASSWORD
+npx wrangler secret put MEGA_FOLDER_ID
+
+# GitHub (fallback - always recommended)
+npx wrangler secret put GITHUB_TOKEN
+npx wrangler secret put GITHUB_OWNER
+npx wrangler secret put GITHUB_REPO
 ```
 
-This creates all the tables for books, shelves, progress, etc.
-
----
-
-## 4. Set All Required Secrets
-
-Go to: **Cloudflare Dashboard → Pages → nightmare-library → Settings → Environment variables**
-
-Click "Add variable" for each secret below. Make sure to select "Encrypt" for sensitive values.
-
-### SECRET: PASSWORD
-- **Purpose**: Master password for login authentication
-- **Required Data**: A strong password string (min 12 characters recommended)
-- **Command**: `npx wrangler secret put PASSWORD`
-
-### SECRET: JWT_SECRET
-- **Purpose**: Signs authentication tokens
-- **Required Data**: Random 64+ character string (use a password generator)
-- **Command**: `npx wrangler secret put JWT_SECRET`
-
-### SECRET: STORAGE_PROVIDER_1_TYPE
-- **Purpose**: Type of primary storage provider
-- **Required Data**: One of: `r2`, `s3`, `gcs`, `backblaze`
-- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_TYPE`
-
-### SECRET: STORAGE_PROVIDER_1_BUCKET
-- **Purpose**: Bucket name for primary storage
-- **Required Data**: Your bucket name (e.g., `nightmare-library-books`)
-- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_BUCKET`
-
-### SECRET: STORAGE_PROVIDER_1_ACCESS_KEY
-- **Purpose**: Access key/ID for storage provider
-- **Required Data**: 
-  - For R2: R2 Access Key ID from Cloudflare dashboard
-  - For S3: AWS Access Key ID
-  - For GCS: Service account client email
-- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_ACCESS_KEY`
-
-### SECRET: STORAGE_PROVIDER_1_SECRET_KEY
-- **Purpose**: Secret key for storage provider
-- **Required Data**:
-  - For R2: R2 Secret Access Key from Cloudflare dashboard
-  - For S3: AWS Secret Access Key
-  - For GCS: Service account private key (JSON string)
-- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_SECRET_KEY`
-
-### SECRET: STORAGE_PROVIDER_1_ENDPOINT (Optional for S3/R2)
-- **Purpose**: Custom endpoint URL
-- **Required Data**: 
-  - For R2: `https://<account_id>.r2.cloudflarestorage.com`
-  - For S3: Leave empty or custom endpoint
-- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_ENDPOINT`
-
-### SECRET: STORAGE_PROVIDER_1_REGION (Optional)
-- **Purpose**: Storage region
-- **Required Data**: Region code (e.g., `us-east-1`, `auto` for R2)
-- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_REGION`
-
-### SECRET: GITHUB_FALLBACK_TOKEN
-- **Purpose**: GitHub Personal Access Token for fallback storage
-- **Required Data**: GitHub PAT with `repo` scope (for creating private repos)
-- **How to create**:
-  1. Go to GitHub → Settings → Developer Settings → Personal Access Tokens
-  2. Generate new token (classic) with `repo` scope
-  3. Copy the token
-- **Command**: `npx wrangler secret put GITHUB_FALLBACK_TOKEN`
-
-### SECRET: GITHUB_FALLBACK_OWNER
-- **Purpose**: GitHub username for fallback storage repos
-- **Required Data**: Your GitHub username
-- **Command**: `npx wrangler secret put GITHUB_FALLBACK_OWNER`
-
-## 5. Connect GitHub to Cloudflare Pages
+## 4. Deploy to Cloudflare Pages
 
 1. Go to **Cloudflare Dashboard → Pages**
 2. Click **"Create a project" → "Connect to Git"**
@@ -150,16 +133,25 @@ Click "Add variable" for each secret below. Make sure to select "Encrypt" for se
 4. Configure build settings:
    - **Project name**: `nightmare-library`
    - **Production branch**: `main`
-   - **Build command**: (leave empty - no build needed)
-   - **Build output directory**: `.` (root directory)
-5. After first deploy, go to **Settings → Functions → D1 database bindings**:
-   - Variable name: `DB`
-   - D1 database: Select `nightmare-library-db`
-6. Add **KV namespace bindings**:
-   - Variable name: `KV_SESSIONS` → Select your sessions namespace
-   - Variable name: `KV_CACHE` → Select your cache namespace
-7. Go to **Settings → Environment Variables** and add all secrets from Step 4
-8. Trigger a new deployment!
+   - **Build command**: (leave empty)
+   - **Build output directory**: `.`
+5. After first deploy, add bindings:
+   - **D1 database**: Variable `DB` → `nightmare-library-db`
+   - **KV namespaces**: 
+     - Variable `KV_SESSIONS` → your sessions namespace
+     - Variable `KV_CACHE` → your cache namespace
+6. Add all secrets from Step 3 in **Settings → Environment Variables**
+
+## Storage Cascading Logic
+
+The system automatically tries storage providers in this order:
+
+1. **Google Drive** - If `GDRIVE_ACCESS_TOKEN` is configured
+2. **Dropbox** - If `DROPBOX_ACCESS_TOKEN` is configured
+3. **Mega.nz** - If `MEGA_EMAIL` and `MEGA_PASSWORD` are configured
+4. **GitHub** - If `GITHUB_TOKEN` and `GITHUB_OWNER` are configured (max 4GB)
+
+If a provider fails, the system automatically tries the next one. GitHub is always used as the final fallback with a 4GB storage cap.
 
 ## Summary of All Secrets
 
@@ -167,25 +159,19 @@ Click "Add variable" for each secret below. Make sure to select "Encrypt" for se
 |-------------|----------|-------------|
 | PASSWORD | Yes | Master login password |
 | JWT_SECRET | Yes | Random 64+ char string for token signing |
-| STORAGE_PROVIDER_1_TYPE | Yes | `r2`, `s3`, `gcs`, or `backblaze` |
-| STORAGE_PROVIDER_1_BUCKET | Yes | Bucket name |
-| STORAGE_PROVIDER_1_ACCESS_KEY | Yes | Provider access key/ID |
-| STORAGE_PROVIDER_1_SECRET_KEY | Yes | Provider secret key |
-| STORAGE_PROVIDER_1_ENDPOINT | No | Custom endpoint URL |
-| STORAGE_PROVIDER_1_REGION | No | Region code |
-| GITHUB_FALLBACK_TOKEN | Yes | GitHub PAT for fallback storage |
-| GITHUB_FALLBACK_OWNER | Yes | GitHub username |
+| GDRIVE_ACCESS_TOKEN | No* | Google Drive OAuth2 token |
+| GDRIVE_FOLDER_ID | No | Google Drive folder ID |
+| DROPBOX_ACCESS_TOKEN | No* | Dropbox app access token |
+| DROPBOX_PATH | No | Dropbox base path |
+| MEGA_EMAIL | No* | Mega.nz account email |
+| MEGA_PASSWORD | No* | Mega.nz account password |
+| MEGA_FOLDER_ID | No | Mega.nz folder ID |
+| GITHUB_TOKEN | Yes** | GitHub PAT with repo scope |
+| GITHUB_OWNER | Yes** | GitHub username |
+| GITHUB_REPO | No | Custom GitHub repo name |
 
-## GitHub Fallback Storage
-
-When primary storage is unavailable or returns errors, the system automatically:
-
-1. Creates a private repository named `nightmare-library-storage-{timestamp}`
-2. Uploads files as base64-encoded content
-3. Stores file references in the database
-4. Seamlessly retrieves files when needed
-
-This ensures your library remains functional even if your primary storage provider has issues.
+\* At least one storage provider is required  
+\** Recommended as final fallback
 
 ## Testing Locally
 
@@ -193,15 +179,22 @@ This ensures your library remains functional even if your primary storage provid
 npx wrangler pages dev .
 ```
 
-Create a `.dev.vars` file with your secrets for local testing:
+Create a `.dev.vars` file with your secrets:
 
 ```
 PASSWORD=your-test-password
 JWT_SECRET=your-64-char-secret-key-here-make-it-long-and-random
-STORAGE_PROVIDER_1_TYPE=r2
-STORAGE_PROVIDER_1_BUCKET=test-bucket
-STORAGE_PROVIDER_1_ACCESS_KEY=your-access-key
-STORAGE_PROVIDER_1_SECRET_KEY=your-secret-key
-GITHUB_FALLBACK_TOKEN=ghp_xxxxxxxxxxxx
-GITHUB_FALLBACK_OWNER=your-github-username
+GDRIVE_ACCESS_TOKEN=your-gdrive-token
+DROPBOX_ACCESS_TOKEN=your-dropbox-token
+MEGA_EMAIL=your-mega-email
+MEGA_PASSWORD=your-mega-password
+GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+GITHUB_OWNER=your-github-username
 ```
+
+## Monitoring Storage Usage
+
+- **Google Drive**: Check usage in Google Drive web interface
+- **Dropbox**: Check storage quota in Dropbox settings
+- **Mega.nz**: Check usage in Mega.nz web interface  
+- **GitHub**: The system automatically prevents exceeding 4GB limit

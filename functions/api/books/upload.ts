@@ -3,20 +3,22 @@
  * POST /api/books/upload - Upload new book file
  */
 
-import { uploadFile, getStorageConfig, getGitHubFallbackConfig } from '../../storage-proxy';
+import { uploadFile, getStorageConfigs } from '../../storage-proxy';
 import { generateBookCardHtml } from '../../html-snippets';
 
 interface Env {
   DB: D1Database;
   KV_CACHE: KVNamespace;
-  STORAGE_PROVIDER_1_TYPE: string;
-  STORAGE_PROVIDER_1_BUCKET: string;
-  STORAGE_PROVIDER_1_ACCESS_KEY: string;
-  STORAGE_PROVIDER_1_SECRET_KEY: string;
-  STORAGE_PROVIDER_1_ENDPOINT?: string;
-  STORAGE_PROVIDER_1_REGION?: string;
-  GITHUB_FALLBACK_TOKEN: string;
-  GITHUB_FALLBACK_OWNER: string;
+  GDRIVE_ACCESS_TOKEN?: string;
+  GDRIVE_FOLDER_ID?: string;
+  DROPBOX_ACCESS_TOKEN?: string;
+  DROPBOX_PATH?: string;
+  MEGA_EMAIL?: string;
+  MEGA_PASSWORD?: string;
+  MEGA_FOLDER_ID?: string;
+  GITHUB_TOKEN: string;
+  GITHUB_OWNER: string;
+  GITHUB_REPO?: string;
 }
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
@@ -72,26 +74,36 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     // Get file data
     const fileData = await file.arrayBuffer();
 
-    // Try primary storage
-    let storageConfig = getStorageConfig(env as unknown as Record<string, string>);
-    let uploadResult = await uploadFile(storageConfig, `${bookId}.${fileType}`, fileData, contentType);
-
-    // Fallback to GitHub if primary fails
-    if (!uploadResult.success) {
-      console.log('Primary storage failed, using GitHub fallback');
-      storageConfig = getGitHubFallbackConfig(env as unknown as Record<string, string>);
-      uploadResult = await uploadFile(storageConfig, `${bookId}.${fileType}`, fileData, contentType);
-    }
-
-    if (!uploadResult.success) {
+    // Get cascading storage configs (GDrive -> Dropbox -> Mega -> GitHub)
+    const storageConfigs = getStorageConfigs(env as unknown as Record<string, string>);
+    
+    if (storageConfigs.length === 0) {
       return new Response(JSON.stringify({ 
         success: false, 
-        message: 'Failed to store file: ' + uploadResult.error 
+        message: 'No storage providers configured' 
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // Try uploading with cascading fallback
+    const uploadResult = await uploadFile(storageConfigs, `${bookId}.${fileType}`, fileData, contentType);
+
+    if (!uploadResult.success) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        message: 'All storage providers failed: ' + uploadResult.error 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Determine which storage type was used
+    const storageType = uploadResult.storageId?.includes('/') ? 'github' : 
+                       uploadResult.url?.includes('drive.google.com') ? 'gdrive' :
+                       uploadResult.url?.includes('dropbox') ? 'dropbox' : 'mega';
 
     // Insert into database
     const now = Date.now();
@@ -102,7 +114,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       bookId,
       title,
       author,
-      storageConfig.type,
+      storageType,
       uploadResult.storageId,
       fileType,
       fileData.byteLength,
