@@ -6,34 +6,55 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "./"
 
 # D1 Database Binding
+# After running: npx wrangler d1 create nightmare-library-db
+# Copy the database_id from the output and paste below
 [[d1_databases]]
 binding = "DB"
 database_name = "nightmare-library-db"
-database_id = "YOUR_D1_DATABASE_ID_HERE"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+# Example: database_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
 # KV Namespace Bindings
+# After running: npx wrangler kv:namespace create "KV_SESSIONS"
+# Copy the id from the output and paste below
 [[kv_namespaces]]
 binding = "KV_SESSIONS"
-id = "YOUR_KV_SESSIONS_ID_HERE"
+id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# Example: id = "abc123def456ghi789jkl012mno345pq"
 
+# After running: npx wrangler kv:namespace create "KV_CACHE"
 [[kv_namespaces]]
 binding = "KV_CACHE"
-id = "YOUR_KV_CACHE_ID_HERE"
+id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# Example: id = "xyz789abc123def456ghi012jkl345mn"
 
 # Environment Variables (non-secret)
 [vars]
 ENVIRONMENT = "production"
 
-# Secrets are set via CLI or dashboard, not in this file
-# Required secrets:
-# - PASSWORD (master login password)
-# - JWT_SECRET (token signing key)
-# - STORAGE_PROVIDER_1_TYPE (r2, s3, gcs, backblaze)
-# - STORAGE_PROVIDER_1_BUCKET
-# - STORAGE_PROVIDER_1_ACCESS_KEY
-# - STORAGE_PROVIDER_1_SECRET_KEY
-# - STORAGE_PROVIDER_1_ENDPOINT (optional)
-# - STORAGE_PROVIDER_1_REGION (optional)
-# - GITHUB_FALLBACK_TOKEN (for GitHub storage fallback)
-# - GITHUB_FALLBACK_OWNER (GitHub username for fallback repos)
-# See CLOUDFLARE_SETUP.md for complete instructions
+# ============================================
+# SECRETS - Set these in Cloudflare Dashboard
+# ============================================
+# Go to: Cloudflare Dashboard > Pages > nightmare-library > Settings > Environment variables
+# Or use CLI: npx wrangler secret put SECRET_NAME
+#
+# REQUIRED SECRETS:
+# -----------------
+# PASSWORD          = "YourSecurePassword123!"     (your login password)
+# JWT_SECRET        = "random-64-character-string" (generate with password manager)
+#
+# STORAGE SECRETS (choose one provider):
+# --------------------------------------
+# STORAGE_PROVIDER_1_TYPE       = "r2"             (options: r2, s3, gcs, backblaze)
+# STORAGE_PROVIDER_1_BUCKET     = "nightmare-books" (your bucket name)
+# STORAGE_PROVIDER_1_ACCESS_KEY = "your-access-key"
+# STORAGE_PROVIDER_1_SECRET_KEY = "your-secret-key"
+# STORAGE_PROVIDER_1_ENDPOINT   = "https://xxx.r2.cloudflarestorage.com" (for R2)
+# STORAGE_PROVIDER_1_REGION     = "auto"           (or us-east-1, etc)
+#
+# GITHUB FALLBACK (backup storage):
+# ---------------------------------
+# GITHUB_FALLBACK_TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxx" (GitHub Personal Access Token)
+# GITHUB_FALLBACK_OWNER = "your-github-username"
+#
+# See CLOUDFLARE_SETUP.md for step-by-step instructions
