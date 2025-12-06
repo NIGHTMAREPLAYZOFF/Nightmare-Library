@@ -63,6 +63,11 @@ async function init() {
     await loadBook();
     loadThemePreference();
 
+    // Start analytics session
+    if (window.readingAnalytics) {
+        window.readingAnalytics.startSession(bookId);
+    }
+
     // Show shortcuts hint briefly
     elements.shortcutsHint.classList.add('visible');
     setTimeout(() => elements.shortcutsHint.classList.remove('visible'), 5000);
@@ -566,12 +571,35 @@ function toggleFullscreen() {
         document.documentElement.requestFullscreen();
         isFullscreen = true;
         document.body.classList.add('fullscreen');
+        // Hide controls in fullscreen for immersive reading
+        setTimeout(() => {
+            elements.header.style.transform = 'translateY(-100%)';
+            elements.nav.style.transform = 'translateY(100%)';
+        }, 2000);
     } else {
         document.exitFullscreen();
         isFullscreen = false;
         document.body.classList.remove('fullscreen');
+        elements.header.style.transform = 'translateY(0)';
+        elements.nav.style.transform = 'translateY(0)';
     }
 }
+
+// Show controls on mouse movement in fullscreen
+let hideControlsTimeout;
+document.addEventListener('mousemove', () => {
+    if (isFullscreen) {
+        elements.header.style.transform = 'translateY(0)';
+        elements.nav.style.transform = 'translateY(0)';
+        clearTimeout(hideControlsTimeout);
+        hideControlsTimeout = setTimeout(() => {
+            if (isFullscreen) {
+                elements.header.style.transform = 'translateY(-100%)';
+                elements.nav.style.transform = 'translateY(100%)';
+            }
+        }, 3000);
+    }
+});
 
 // Keyboard shortcuts
 function handleKeyboard(e) {
@@ -667,8 +695,16 @@ window.addEventListener('unload', () => {
     if (book) {
         book.destroy();
     }
-    // Security: Consider sending a final saveProgress call here if the browser
-    // supports it reliably, or ensure the saveProgress on beforeunload is robust.
+    
+    // End analytics session
+    if (window.readingAnalytics) {
+        window.readingAnalytics.endSession();
+        
+        // Track if book is finished
+        if (progress >= 95) {
+            window.readingAnalytics.trackBookFinished(bookId);
+        }
+    }
 });
 
 // Initialize customization on load

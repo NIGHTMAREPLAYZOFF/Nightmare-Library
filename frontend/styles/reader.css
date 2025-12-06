@@ -254,6 +254,18 @@ body {
     max-width: 100%;
 }
 
+/* Fullscreen immersive mode */
+body.fullscreen .reader-header,
+body.fullscreen .reader-nav {
+    transition: transform 0.3s ease;
+}
+
+body.fullscreen .epub-container,
+body.fullscreen .pdf-container {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
 /* Navigation */
 .reader-nav {
     position: fixed;

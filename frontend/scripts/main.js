@@ -8,10 +8,13 @@ let allBooks = [];
 let allShelves = [];
 let currentView = 'all';
 let currentBookId = null;
+let currentFilter = 'all';
+let currentSort = 'recent';
 let settings = {
     readerTheme: 'obsidian',
     fontSize: 16
 };
+let isOffline = false;
 
 // DOM Elements
 const elements = {
@@ -47,6 +50,8 @@ async function init() {
     setupEventListeners();
     setupLazyLoading();
     setupDragAndDrop();
+    setupOfflineDetection();
+    setupFilterAndSort();
     await loadData();
     initializeVirtualization();
 }
@@ -76,6 +81,103 @@ function initializeVirtualization() {
         console.log('Virtualizing large library with', allBooks.length, 'books');
         // Virtual scrolling implementation would go here
     }
+}
+
+function setupOfflineDetection() {
+    const updateOnlineStatus = () => {
+        isOffline = !navigator.onLine;
+        const indicator = document.getElementById('offline-indicator');
+        
+        if (!indicator) {
+            const div = document.createElement('div');
+            div.id = 'offline-indicator';
+            div.className = 'offline-indicator';
+            document.body.appendChild(div);
+        }
+        
+        const indicatorEl = document.getElementById('offline-indicator');
+        if (isOffline) {
+            indicatorEl.textContent = '📡 Offline Mode';
+            indicatorEl.classList.remove('online');
+        } else {
+            indicatorEl.textContent = '✓ Connected';
+            indicatorEl.classList.add('online');
+            setTimeout(() => {
+                indicatorEl.style.display = 'none';
+            }, 2000);
+        }
+        indicatorEl.style.display = 'block';
+    };
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    
+    // Initial check
+    if (!navigator.onLine) {
+        updateOnlineStatus();
+    }
+}
+
+function setupFilterAndSort() {
+    // Filter chips
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            currentFilter = chip.dataset.filter;
+            applyFiltersAndSort();
+        });
+    });
+
+    // Sort dropdown
+    const sortSelect = document.getElementById('sort-select');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            applyFiltersAndSort();
+        });
+    }
+}
+
+function applyFiltersAndSort() {
+    let filtered = [...allBooks];
+
+    // Apply filter
+    switch (currentFilter) {
+        case 'favorites':
+            filtered = filtered.filter(b => b.is_favorite);
+            break;
+        case 'recent':
+            filtered = filtered.filter(b => b.last_read_at).sort((a, b) => b.last_read_at - a.last_read_at);
+            break;
+        case 'unread':
+            filtered = filtered.filter(b => !b.progress || b.progress < 5);
+            break;
+        case 'reading':
+            filtered = filtered.filter(b => b.progress > 5 && b.progress < 95);
+            break;
+        case 'finished':
+            filtered = filtered.filter(b => b.progress >= 95);
+            break;
+    }
+
+    // Apply sort
+    switch (currentSort) {
+        case 'title':
+            filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+            break;
+        case 'author':
+            filtered.sort((a, b) => (a.author || '').localeCompare(b.author || ''));
+            break;
+        case 'progress':
+            filtered.sort((a, b) => (b.progress || 0) - (a.progress || 0));
+            break;
+        case 'recent':
+            filtered.sort((a, b) => (b.last_read_at || 0) - (a.last_read_at || 0));
+            break;
+    }
+
+    renderBooks(filtered, 'all-books-grid');
 }
 
 function setupDragAndDrop() {
@@ -1087,29 +1189,10 @@ async function undoLastAction() {
     }
 }
 
-// Quick filters
+// Quick filters (deprecated - use applyFiltersAndSort instead)
 function applyQuickFilter(filter) {
-    let filtered = [...allBooks];
-
-    switch (filter) {
-        case 'favorites':
-            filtered = filtered.filter(b => b.is_favorite);
-            break;
-        case 'recent':
-            filtered = filtered.filter(b => b.last_read_at).sort((a, b) => b.last_read_at - a.last_read_at);
-            break;
-        case 'unread':
-            filtered = filtered.filter(b => !b.progress || b.progress < 5);
-            break;
-        case 'reading':
-            filtered = filtered.filter(b => b.progress > 5 && b.progress < 95);
-            break;
-        case 'finished':
-            filtered = filtered.filter(b => b.progress >= 95);
-            break;
-    }
-
-    renderBooks(filtered, 'all-books-grid'); // Render filtered books using virtual shelf
+    currentFilter = filter;
+    applyFiltersAndSort();
 }
 
 // Delete Modal
