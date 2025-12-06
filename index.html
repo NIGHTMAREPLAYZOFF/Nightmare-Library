@@ -116,6 +116,9 @@
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .submit-btn:hover {
@@ -171,11 +174,30 @@
             to { transform: rotate(360deg); }
         }
 
+        .theme-switch {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .theme-switch img {
+            width: 24px;
+            height: 24px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .theme-switch:hover img {
+            opacity: 1;
+        }
+
         @media (max-width: 480px) {
             .login-card {
                 padding: 32px 24px;
             }
-            
+
             .logo h1 {
                 font-size: 24px;
             }
@@ -183,15 +205,19 @@
     </style>
 </head>
 <body>
+    <div class="theme-switch" id="theme-switch">
+        <img id="theme-icon" src="/frontend/assets/moon.svg" alt="Toggle theme">
+    </div>
+
     <div class="login-container">
         <div class="login-card">
             <div class="logo">
                 <h1>Nightmare Library</h1>
                 <p>Your private digital bookshelf</p>
             </div>
-            
+
             <div id="error-message" class="error-message"></div>
-            
+
             <form id="login-form" action="/api/auth" method="POST">
                 <div class="form-group">
                     <label for="password">Password</label>
@@ -204,7 +230,7 @@
                         autocomplete="current-password"
                     >
                 </div>
-                
+
                 <button type="submit" class="submit-btn" id="submit-btn">
                     <span class="loading-spinner"></span>
                     <span class="btn-text">Enter Library</span>
@@ -217,12 +243,50 @@
         const form = document.getElementById('login-form');
         const errorMessage = document.getElementById('error-message');
         const submitBtn = document.getElementById('submit-btn');
+        const passwordInput = document.getElementById('password');
+        const themeSwitch = document.getElementById('theme-switch');
+        const themeIcon = document.getElementById('theme-icon');
+
+        // Theme Toggling
+        const prefersDarkScheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const currentTheme = () => localStorage.getItem('theme');
+
+        const setTheme = (theme) => {
+            if (theme === 'dark') {
+                document.body.classList.add('dark-theme');
+                themeIcon.src = '/frontend/assets/sun.svg';
+                themeIcon.alt = 'Switch to light theme';
+            } else {
+                document.body.classList.remove('dark-theme');
+                themeIcon.src = '/frontend/assets/moon.svg';
+                themeIcon.alt = 'Switch to dark theme';
+            }
+            localStorage.setItem('theme', theme);
+        };
+
+        themeSwitch.addEventListener('click', () => {
+            const newTheme = currentTheme() === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+
+        // Initialize theme on load
+        if (currentTheme() === 'dark' || (prefersDarkScheme() && !currentTheme())) {
+            setTheme('dark');
+        } else {
+            setTheme('light');
+        }
+
+        // Login Form Handling
+        const showError = (message) => {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('visible');
+        };
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const password = document.getElementById('password').value;
-            
+
+            const password = passwordInput.value;
+
             errorMessage.classList.remove('visible');
             submitBtn.classList.add('loading');
             submitBtn.disabled = true;
@@ -239,17 +303,32 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    window.location.href = '/frontend/dashboard.html';
+                    window.location.href = data.redirect || '/frontend/dashboard.html';
                 } else {
-                    errorMessage.textContent = data.message || 'Invalid password';
-                    errorMessage.classList.add('visible');
+                    let message = data.message || 'Login failed';
+
+                    // Show attempts remaining if available
+                    if (data.attemptsRemaining !== undefined && data.attemptsRemaining > 0) {
+                        message += ` (${data.attemptsRemaining} attempts remaining)`;
+                    }
+
+                    // Add locked warning
+                    if (data.locked) {
+                        passwordInput.disabled = true;
+                        submitBtn.disabled = true;
+                    }
+
+                    showError(message);
                 }
             } catch (error) {
-                errorMessage.textContent = 'Connection error. Please try again.';
-                errorMessage.classList.add('visible');
+                console.error('Login error:', error);
+                showError('Login failed. Please try again.');
             } finally {
                 submitBtn.classList.remove('loading');
-                submitBtn.disabled = false;
+                submitBtn.disabled = false; // Re-enable button only if not locked
+                if (!data?.locked) { // This check prevents re-enabling if locked
+                    submitBtn.disabled = false;
+                }
             }
         });
     </script>
