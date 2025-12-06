@@ -31,30 +31,30 @@
                 </button>
                 <h1 class="reader-title" id="book-title">Loading...</h1>
             </div>
-            
+
             <div class="reader-header-center">
                 <div class="reader-progress-bar">
                     <div class="reader-progress-fill" id="progress-fill" style="width: 0%"></div>
                 </div>
                 <span class="reader-progress-text" id="progress-text">0%</span>
             </div>
-            
+
             <div class="reader-header-right">
                 <div class="font-controls">
                     <button class="font-btn" id="font-decrease" title="Decrease font size">A-</button>
                     <button class="font-btn" id="font-increase" title="Increase font size">A+</button>
                 </div>
-                
+
                 <div class="theme-selector">
                     <button class="theme-btn obsidian active" data-theme="obsidian" title="Dark theme"></button>
                     <button class="theme-btn sepia" data-theme="sepia" title="Sepia theme"></button>
                     <button class="theme-btn light" data-theme="light" title="Light theme"></button>
                 </div>
-                
+
                 <button class="reader-btn" id="toc-btn" title="Table of contents">
                     &#9776;
                 </button>
-                
+
                 <button class="reader-btn" id="fullscreen-btn" title="Fullscreen (F)">
                     &#x26F6;
                 </button>
@@ -77,7 +77,7 @@
         <div class="reader-content" id="reader-content">
             <!-- EPUB container -->
             <div class="epub-container" id="epub-container"></div>
-            
+
             <!-- PDF container -->
             <div class="pdf-container" id="pdf-container" style="display: none;">
                 <canvas id="pdf-canvas"></canvas>
@@ -90,9 +90,9 @@
                 <span>&#8592;</span>
                 <span>Previous</span>
             </button>
-            
+
             <span class="page-indicator" id="page-indicator">Page 1</span>
-            
+
             <button class="nav-btn" id="next-btn" title="Next (K)">
                 <span>Next</span>
                 <span>&#8594;</span>
@@ -109,7 +109,7 @@
                     </linearGradient>
                 </defs>
                 <circle class="bg" cx="18" cy="18" r="16"/>
-                <circle class="progress" cx="18" cy="18" r="16" 
+                <circle class="progress" cx="18" cy="18" r="16"
                         stroke-dasharray="0, 100" id="progress-circle"/>
                 <text class="text" x="18" y="18" id="progress-ring-text">0%</text>
             </svg>
@@ -124,13 +124,16 @@
         </div>
     </div>
 
-    <!-- epub.js from CDN -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
     <!-- pdf.js from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
     </script>
+    <script src="/frontend/scripts/tts-engine.js"></script>
+    <script src="/frontend/scripts/emoji-bookmarks.js"></script>
+    <script src="/frontend/scripts/reading-gamification.js"></script>
     <script src="/frontend/scripts/reader.js"></script>
 </body>
 </html>

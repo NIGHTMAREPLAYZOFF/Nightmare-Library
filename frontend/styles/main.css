@@ -1123,3 +1123,179 @@ body {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
+
+/* Gamification Notifications */
+.xp-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: linear-gradient(135deg, #4caf50, #66bb6a);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    animation: slideInRight 0.3s ease;
+    z-index: 1000;
+}
+
+.level-up-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #bb86fc, #7c4dff);
+    color: white;
+    padding: 40px 60px;
+    border-radius: 16px;
+    font-size: 32px;
+    font-weight: bold;
+    box-shadow: 0 8px 32px rgba(187, 134, 252, 0.5);
+    animation: pulse 0.5s ease;
+    z-index: 1001;
+}
+
+.achievement-notification {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background: var(--bg-card);
+    border: 2px solid #ffa726;
+    border-radius: 12px;
+    padding: 20px;
+    width: 300px;
+    box-shadow: 0 8px 24px rgba(255, 167, 38, 0.3);
+    animation: slideInUp 0.4s ease;
+    z-index: 1000;
+}
+
+.achievement-notification h3 {
+    margin: 0 0 8px 0;
+    color: #ffa726;
+    font-size: 16px;
+}
+
+.achievement-notification p {
+    margin: 0 0 4px 0;
+    font-weight: 600;
+}
+
+.achievement-notification small {
+    color: var(--text-muted);
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Bookmark Panel */
+.bookmark-panel {
+    position: fixed;
+    right: 20px;
+    top: 80px;
+    width: 300px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 90;
+}
+
+.bookmark-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.bookmark-item:hover {
+    background: var(--bg-hover);
+}
+
+.bookmark-emoji {
+    font-size: 24px;
+}
+
+.bookmark-note {
+    flex: 1;
+    font-size: 14px;
+}
+
+.add-bookmark {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.add-bookmark select,
+.add-bookmark input {
+    padding: 6px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+}
+
+.add-bookmark button {
+    padding: 6px 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* TTS Controls */
+.tts-controls {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.tts-controls button {
+    padding: 8px 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.tts-controls button:hover {
+    transform: scale(1.05);
+}
+
+.tts-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
