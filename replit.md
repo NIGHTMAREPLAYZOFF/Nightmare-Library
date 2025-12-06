@@ -47,8 +47,13 @@ nightmare-library/
 
 ## Recent Changes
 
-- Initial project setup
-- Dual structure: Cloudflare at root, Replit in subfolder
+- December 2024: Full implementation complete
+- JWT authentication for Replit version (stateless, survives restarts)
+- KV-backed sessions for Cloudflare version (persistent)
+- All book management APIs implemented
+- Shelves and tags system complete
+- Fuzzy search working
+- Obsidian-black theme applied throughout
 
 ## User Preferences
 
