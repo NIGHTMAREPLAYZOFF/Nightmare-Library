@@ -1,7 +1,9 @@
 /**
- * Get Single Book API
- * GET /api/books/get?id=xxx - Returns book details with progress
+ * Get Book API
+ * GET /api/books/get?id=xxx - Get book file for reading
  */
+
+import { downloadFile, getStorageConfigs } from '../../storage-proxy';
 
 interface Env {
   DB: D1Database;
@@ -13,9 +15,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const bookId = url.searchParams.get('id');
 
   if (!bookId) {
-    return new Response(JSON.stringify({ 
-      success: false, 
-      message: 'Book ID is required' 
+    return new Response(JSON.stringify({
+      success: false,
+      message: 'Book ID is required'
     }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' }
@@ -25,7 +27,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
     // Get book details
     const bookResult = await env.DB.prepare(`
-      SELECT 
+      SELECT
         b.id, b.title, b.author, b.tags, b.cover_url, b.file_type,
         b.file_size, b.total_pages, b.uploaded_at, b.last_read_at,
         b.storage_provider, b.storage_id
@@ -34,9 +36,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     `).bind(bookId).first();
 
     if (!bookResult) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        message: 'Book not found' 
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'Book not found'
       }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' }
@@ -57,7 +59,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       WHERE id = 1
     `).first();
 
-    return new Response(JSON.stringify({ 
+    const storageConfigs = await getStorageConfigs(env);
+
+    return new Response(JSON.stringify({
       success: true,
       book: bookResult,
       progress: progressResult || { percent: 0, current_page: 1 },
@@ -67,16 +71,17 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       } : {
         readerTheme: 'obsidian',
         fontSize: 16
-      }
+      },
+      storageConfigs
     }), {
       headers: { 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
     console.error('Get book error:', error);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      message: 'Failed to load book' 
+    return new Response(JSON.stringify({
+      success: false,
+      message: 'Failed to load book'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
