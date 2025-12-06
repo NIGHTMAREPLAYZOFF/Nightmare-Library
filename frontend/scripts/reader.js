@@ -316,23 +316,116 @@ function goToLibrary() {
     window.location.href = '/frontend/dashboard.html';
 }
 
-// Font size
+// Reading customization
+let lineHeight = 1.6;
+let letterSpacing = 0;
+let fontFamily = 'Georgia';
+
 function decreaseFontSize() {
     if (fontSize > 12) {
         fontSize -= 2;
-        if (rendition) {
-            rendition.themes.fontSize(`${fontSize}px`);
-        }
+        applyReaderStyles();
     }
 }
 
 function increaseFontSize() {
     if (fontSize < 28) {
         fontSize += 2;
-        if (rendition) {
-            rendition.themes.fontSize(`${fontSize}px`);
+        applyReaderStyles();
+    }
+}
+
+function applyReaderStyles() {
+    if (rendition) {
+        rendition.themes.fontSize(`${fontSize}px`);
+        rendition.themes.override('line-height', `${lineHeight}`);
+        rendition.themes.override('letter-spacing', `${letterSpacing}px`);
+        rendition.themes.override('font-family', fontFamily);
+    }
+}
+
+// Search within book
+let searchResults = [];
+let currentSearchIndex = 0;
+
+async function searchInBook(query) {
+    if (!query || query.length < 2) return;
+    
+    searchResults = [];
+    currentSearchIndex = 0;
+    
+    if (fileType === 'epub' && book) {
+        const spine = await book.loaded.spine;
+        
+        for (let item of spine.items) {
+            const doc = await item.load(book.load.bind(book));
+            const bodyText = doc.body.textContent;
+            
+            const regex = new RegExp(query, 'gi');
+            let match;
+            
+            while ((match = regex.exec(bodyText)) !== null) {
+                searchResults.push({
+                    cfi: item.cfiBase,
+                    excerpt: bodyText.substring(Math.max(0, match.index - 50), match.index + 50),
+                    position: match.index
+                });
+            }
+        }
+        
+        if (searchResults.length > 0) {
+            highlightSearchResults(query);
+            showSearchNavigation();
         }
     }
+}
+
+function highlightSearchResults(query) {
+    if (rendition) {
+        rendition.annotations.remove(null, 'highlight');
+        
+        searchResults.forEach(result => {
+            rendition.annotations.add('highlight', result.cfi, {}, null, 'search-highlight');
+        });
+        
+        // Jump to first result
+        if (searchResults[0]) {
+            rendition.display(searchResults[0].cfi);
+        }
+    }
+}
+
+function nextSearchResult() {
+    if (searchResults.length === 0) return;
+    currentSearchIndex = (currentSearchIndex + 1) % searchResults.length;
+    rendition.display(searchResults[currentSearchIndex].cfi);
+}
+
+function prevSearchResult() {
+    if (searchResults.length === 0) return;
+    currentSearchIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
+    rendition.display(searchResults[currentSearchIndex].cfi);
+}
+
+function showSearchNavigation() {
+    const nav = document.createElement('div');
+    nav.id = 'search-nav';
+    nav.innerHTML = `
+        <button onclick="prevSearchResult()">◀</button>
+        <span>${currentSearchIndex + 1} of ${searchResults.length}</span>
+        <button onclick="nextSearchResult()">▶</button>
+        <button onclick="clearSearch()">✕</button>
+    `;
+    document.body.appendChild(nav);
+}
+
+function clearSearch() {
+    searchResults = [];
+    if (rendition) {
+        rendition.annotations.remove(null, 'highlight');
+    }
+    const nav = document.getElementById('search-nav');
+    if (nav) nav.remove();
 }
 
 // Theme Management
