@@ -1,0 +1,16 @@
+{
+  "name": "nightmare-library",
+  "version": "1.0.0",
+  "description": "A private digital library for EPUB and PDF books with obsidian-black theme",
+  "scripts": {
+    "dev": "cd replit-version && npm run dev",
+    "build": "cd replit-version && npm run build",
+    "start": "cd replit-version && npm start",
+    "cf:dev": "cd cloudflare-version && wrangler pages dev",
+    "cf:build": "cd cloudflare-version && npm run build",
+    "cf:deploy": "cd cloudflare-version && wrangler pages deploy"
+  },
+  "keywords": ["library", "epub", "pdf", "cloudflare-pages", "digital-library"],
+  "author": "",
+  "license": "MIT"
+}
