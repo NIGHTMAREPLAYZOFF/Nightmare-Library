@@ -1,4 +1,3 @@
-
 /**
  * Global Theme Engine
  * Handles automatic light/dark mode detection and manual toggle
@@ -19,7 +18,7 @@ class ThemeEngine {
     loadTheme() {
         const saved = localStorage.getItem('app-theme');
         if (saved) return saved;
-        
+
         // Auto-detect system preference
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
             return 'light';
@@ -58,7 +57,7 @@ class ThemeEngine {
             const themes = ['dark', 'light', 'auto'];
             const currentIndex = themes.indexOf(this.currentTheme);
             const nextTheme = themes[(currentIndex + 1) % themes.length];
-            
+
             this.applyTheme(nextTheme);
             this.updateThemeIcon(themeBtn);
         });

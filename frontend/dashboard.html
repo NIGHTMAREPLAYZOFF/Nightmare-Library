@@ -14,7 +14,7 @@
             <button class="menu-toggle" id="menu-toggle" aria-label="Toggle sidebar">
                 &#9776;
             </button>
-            
+
             <div class="search-container">
                 <span class="search-icon">&#128269;</span>
                 <input 
@@ -25,7 +25,7 @@
                     autocomplete="off"
                 >
             </div>
-            
+
             <div class="header-actions">
                 <button class="header-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
                     🌙
@@ -46,7 +46,7 @@
                     </li>
                 </ul>
             </div>
-            
+
             <div class="sidebar-section">
                 <h3 class="sidebar-title">Shelves</h3>
                 <ul class="sidebar-nav" id="shelves-list">
@@ -57,23 +57,23 @@
                     <span>New Shelf</span>
                 </div>
             </div>
-            
+
             <div class="sidebar-section">
                 <h3 class="sidebar-title">Tags</h3>
                 <ul class="sidebar-nav" id="tags-list">
                     <!-- Tags loaded dynamically -->
                 </ul>
             </div>
-            
+
             <div class="sidebar-divider"></div>
-            
+
             <div class="sidebar-item" id="upload-sidebar-btn">
                 <span class="sidebar-item-icon">&#11014;</span>
                 <span>Upload Book</span>
             </div>
-            
+
             <div class="sidebar-divider"></div>
-            
+
             <div class="sidebar-stats" id="sidebar-stats">
                 <p>&#128202; <span id="book-count">0</span> Books</p>
                 <p>&#128194; <span id="shelf-count">0</span> Shelves</p>
@@ -82,6 +82,21 @@
 
         <!-- Main Content -->
         <main class="main-content" id="main-content">
+            <!-- Quick Filters Bar -->
+            <div class="filters-bar" style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
+                <button class="filter-chip active" data-filter="all">All Books</button>
+                <button class="filter-chip" data-filter="favorites">⭐ Favorites</button>
+                <button class="filter-chip" data-filter="recent">📖 Recent</button>
+                <button class="filter-chip" data-filter="unread">📚 Unread</button>
+                <div style="flex: 1;"></div>
+                <select id="sort-select" style="padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                    <option value="recent">Sort: Recent</option>
+                    <option value="title">Sort: Title</option>
+                    <option value="author">Sort: Author</option>
+                    <option value="progress">Sort: Progress</option>
+                </select>
+            </div>
+
             <!-- Recently Read Section -->
             <section class="section" id="recently-read-section">
                 <div class="section-header">
@@ -100,7 +115,7 @@
                 <div class="books-grid" id="books-grid">
                     <!-- Books loaded dynamically -->
                 </div>
-                
+
                 <!-- Empty State -->
                 <div class="empty-state" id="empty-state" style="display: none;">
                     <div class="empty-state-icon">&#128218;</div>
@@ -152,7 +167,7 @@
                     <p class="drop-zone-hint">or click to browse (EPUB, PDF)</p>
                     <input type="file" id="file-input" accept=".epub,.pdf" hidden>
                 </div>
-                
+
                 <div id="upload-form" style="display: none;">
                     <div class="form-group">
                         <label class="form-label">Title</label>

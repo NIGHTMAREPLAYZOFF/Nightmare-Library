@@ -17,6 +17,11 @@ let currentTheme = 'obsidian';
 let isFullscreen = false;
 let autoSaveInterval = null;
 
+// Enhanced Reader Customization
+let lineHeight = parseFloat(localStorage.getItem('reader-line-height')) || 1.6;
+let fontFamily = localStorage.getItem('reader-font-family') || 'default';
+let letterSpacing = parseFloat(localStorage.getItem('reader-letter-spacing')) || 0;
+
 // DOM Elements
 const elements = {
     loading: document.getElementById('reader-loading'),
@@ -317,10 +322,6 @@ function goToLibrary() {
 }
 
 // Reading customization
-let lineHeight = 1.6;
-let letterSpacing = 0;
-let fontFamily = 'Georgia';
-
 function decreaseFontSize() {
     if (fontSize > 12) {
         fontSize -= 2;
@@ -335,12 +336,108 @@ function increaseFontSize() {
     }
 }
 
+// Add customization controls to header
+function addCustomizationControls() {
+    const readerControls = document.querySelector('.reader-controls');
+    if (!readerControls || readerControls.querySelector('.customization-menu')) return;
+
+    const customBtn = document.createElement('button');
+    customBtn.className = 'icon-btn';
+    customBtn.innerHTML = '⚙️';
+    customBtn.title = 'Customize Reader';
+    customBtn.onclick = toggleCustomizationMenu;
+
+    readerControls.insertBefore(customBtn, readerControls.querySelector('.theme-selector'));
+
+    const menu = document.createElement('div');
+    menu.className = 'customization-menu';
+    menu.style.cssText = 'display: none; position: absolute; top: 60px; right: 20px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; width: 280px; z-index: 1000;';
+    menu.innerHTML = `
+        <h3 style="margin: 0 0 12px 0; font-size: 14px;">Reader Settings</h3>
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Font Family</label>
+            <select id="font-family-select" style="width: 100%; padding: 6px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
+                <option value="default">Default</option>
+                <option value="serif">Serif</option>
+                <option value="sans-serif">Sans Serif</option>
+                <option value="monospace">Monospace</option>
+            </select>
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Line Height: <span id="line-height-value">${lineHeight}</span></label>
+            <input type="range" id="line-height-slider" min="1.2" max="2.4" step="0.1" value="${lineHeight}" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Letter Spacing: <span id="letter-spacing-value">${letterSpacing}px</span></label>
+            <input type="range" id="letter-spacing-slider" min="-1" max="3" step="0.5" value="${letterSpacing}" style="width: 100%;">
+        </div>
+        <button onclick="resetReaderSettings()" style="width: 100%; padding: 8px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer;">Reset to Defaults</button>
+    `;
+    document.body.appendChild(menu);
+
+    // Event listeners
+    document.getElementById('font-family-select').value = fontFamily;
+    document.getElementById('font-family-select').addEventListener('change', (e) => {
+        fontFamily = e.target.value;
+        applyReaderStyles();
+    });
+
+    document.getElementById('line-height-slider').addEventListener('input', (e) => {
+        lineHeight = parseFloat(e.target.value);
+        document.getElementById('line-height-value').textContent = lineHeight;
+        applyReaderStyles();
+    });
+
+    document.getElementById('letter-spacing-slider').addEventListener('input', (e) => {
+        letterSpacing = parseFloat(e.target.value);
+        document.getElementById('letter-spacing-value').textContent = letterSpacing + 'px';
+        applyReaderStyles();
+    });
+}
+
+function toggleCustomizationMenu() {
+    const menu = document.querySelector('.customization-menu');
+    if (menu) {
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+window.resetReaderSettings = function() {
+    fontSize = 18;
+    lineHeight = 1.6;
+    fontFamily = 'default';
+    letterSpacing = 0;
+    document.getElementById('font-family-select').value = 'default';
+    document.getElementById('line-height-slider').value = 1.6;
+    document.getElementById('line-height-value').textContent = '1.6';
+    document.getElementById('letter-spacing-slider').value = 0;
+    document.getElementById('letter-spacing-value').textContent = '0px';
+    applyReaderStyles();
+};
+
 function applyReaderStyles() {
+    // PDF rendering does not directly support these EPUB theme overrides.
+    // For PDF, font styling is more complex and might require re-rendering with different options.
+    // We'll focus on EPUB styling here.
     if (rendition) {
-        rendition.themes.fontSize(`${fontSize}px`);
-        rendition.themes.override('line-height', `${lineHeight}`);
-        rendition.themes.override('letter-spacing', `${letterSpacing}px`);
-        rendition.themes.override('font-family', fontFamily);
+        const fontMap = {
+            'default': 'Georgia, serif',
+            'serif': 'Georgia, "Times New Roman", serif',
+            'sans-serif': 'Arial, Helvetica, sans-serif',
+            'monospace': '"Courier New", monospace'
+        };
+
+        rendition.themes.fontSize(fontSize + 'px');
+        rendition.themes.override('line-height', lineHeight);
+        rendition.themes.override('letter-spacing', letterSpacing + 'px');
+        if (fontFamily !== 'default') {
+            rendition.themes.override('font-family', fontMap[fontFamily]);
+        }
+
+        localStorage.setItem('reader-font-size', fontSize);
+        localStorage.setItem('reader-line-height', lineHeight);
+        localStorage.setItem('reader-font-family', fontFamily);
+        localStorage.setItem('reader-letter-spacing', letterSpacing);
     }
 }
 
@@ -350,20 +447,20 @@ let currentSearchIndex = 0;
 
 async function searchInBook(query) {
     if (!query || query.length < 2) return;
-    
+
     searchResults = [];
     currentSearchIndex = 0;
-    
+
     if (fileType === 'epub' && book) {
         const spine = await book.loaded.spine;
-        
+
         for (let item of spine.items) {
             const doc = await item.load(book.load.bind(book));
             const bodyText = doc.body.textContent;
-            
+
             const regex = new RegExp(query, 'gi');
             let match;
-            
+
             while ((match = regex.exec(bodyText)) !== null) {
                 searchResults.push({
                     cfi: item.cfiBase,
@@ -372,7 +469,7 @@ async function searchInBook(query) {
                 });
             }
         }
-        
+
         if (searchResults.length > 0) {
             highlightSearchResults(query);
             showSearchNavigation();
@@ -383,11 +480,11 @@ async function searchInBook(query) {
 function highlightSearchResults(query) {
     if (rendition) {
         rendition.annotations.remove(null, 'highlight');
-        
+
         searchResults.forEach(result => {
             rendition.annotations.add('highlight', result.cfi, {}, null, 'search-highlight');
         });
-        
+
         // Jump to first result
         if (searchResults[0]) {
             rendition.display(searchResults[0].cfi);
@@ -573,3 +670,7 @@ window.addEventListener('unload', () => {
     // Security: Consider sending a final saveProgress call here if the browser
     // supports it reliably, or ensure the saveProgress on beforeunload is robust.
 });
+
+// Initialize customization on load
+// Use a slight delay to ensure all elements are available
+setTimeout(addCustomizationControls, 1000);

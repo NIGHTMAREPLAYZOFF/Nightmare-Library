@@ -95,10 +95,10 @@ function setupDragAndDrop() {
     elements.booksGrid.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        
+
         const afterElement = getDragAfterElement(elements.booksGrid, e.clientY);
         const draggable = document.querySelector('.book-card[style*="opacity"]');
-        
+
         if (afterElement == null) {
             elements.booksGrid.appendChild(draggable);
         } else {
@@ -122,11 +122,11 @@ function setupDragAndDrop() {
 
 function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.book-card:not([style*="opacity"])')];
-    
+
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
-        
+
         if (offset < 0 && offset > closest.offset) {
             return { offset: offset, element: child };
         } else {
@@ -137,7 +137,7 @@ function getDragAfterElement(container, y) {
 
 async function saveBookOrder() {
     const bookIds = [...elements.booksGrid.querySelectorAll('.book-card')].map(card => card.dataset.id);
-    
+
     try {
         await fetch('/api/books/reorder', {
             method: 'POST',
@@ -182,7 +182,7 @@ function setupEventListeners() {
     // Sidebar navigation
     document.querySelector('[data-view="all"]').addEventListener('click', () => {
         setActiveView('all');
-        renderBooks();
+        renderBooks([], 'all-books-grid'); // Pass empty array to ensure virtualShelf renders
     });
 }
 
@@ -247,6 +247,7 @@ async function loadData() {
             loadSettings()
         ]);
         updateStats();
+        renderTags(); // Render tags after all books are loaded
     } catch (error) {
         console.error('Failed to load data:', error);
         showToast('Failed to load library data', 'error');
@@ -260,7 +261,7 @@ async function loadBooks() {
 
         if (data.success) {
             allBooks = data.books || [];
-            renderBooks();
+            renderBooks([], 'all-books-grid'); // Initial render for virtual shelf
             renderRecentlyRead();
             updateFabVisibility();
         }
@@ -297,109 +298,271 @@ async function loadSettings() {
 }
 
 // Rendering
-function renderBooks() {
-    let booksToRender = [...allBooks];
+function renderBooks(books, containerId) {
+    if (containerId === 'all-books-grid') {
+        // Use virtual bookshelf for the main grid
+        const virtualShelfInstance = getVirtualShelfInstance();
+        virtualShelfInstance.setBooks(books);
+    } else {
+        // Legacy rendering for other grids like 'recently-read-grid'
+        const container = document.getElementById(containerId);
+        if (!container) return;
 
-    // Filter by view
-    if (currentView.startsWith('shelf:')) {
-        const shelfId = currentView.replace('shelf:', '');
-        const shelf = allShelves.find(s => s.id === shelfId);
-        if (shelf && shelf.bookIds) {
-            booksToRender = booksToRender.filter(b => shelf.bookIds.includes(b.id));
+        if (books.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">No books yet. Upload your first book!</p>';
+            return;
         }
-    } else if (currentView.startsWith('tag:')) {
-        const tag = currentView.replace('tag:', '');
-        booksToRender = booksToRender.filter(b => {
-            const tags = (b.tags || '').split(',').map(t => t.trim().toLowerCase());
-            return tags.includes(tag.toLowerCase());
-        });
-    }
 
-    // Handle empty state
-    if (allBooks.length === 0) {
-        elements.booksGrid.innerHTML = '';
-        elements.emptyState.style.display = 'block';
-        elements.recentlyReadSection.style.display = 'none';
-        return;
-    }
+        // Use the same card creation logic as the virtual shelf for consistency
+        const virtualShelfInstance = getVirtualShelfInstance();
+        container.innerHTML = books.map(book => virtualShelfInstance.createBookCard(book)).join('');
 
-    elements.emptyState.style.display = 'none';
-    elements.recentlyReadSection.style.display = 'block';
-
-    // Render books using snippet_html from backend
-    if (booksToRender.length === 0) {
-        elements.booksGrid.innerHTML = `
-            <div class="empty-state" style="grid-column: 1 / -1;">
-                <div class="empty-state-icon">&#128269;</div>
-                <h3 class="empty-state-title">No books found</h3>
-                <p class="empty-state-text">Try a different filter or add some books</p>
-            </div>
-        `;
-        return;
-    }
-
-    let html = booksToRender.map(book => book.snippet_html || generateBookCard(book)).join('');
-
-    // Add upload tile if <= 5 books
-    if (allBooks.length <= 5) {
-        html += `
-            <div class="upload-tile" id="upload-tile" onclick="openUploadModal()">
-                <div class="upload-tile-icon">+</div>
-                <p class="upload-tile-text">Upload Book</p>
-            </div>
-        `;
-    }
-
-    elements.booksGrid.innerHTML = html;
-
-    // Attach event listeners to book cards
-    document.querySelectorAll('.book-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-            if (!e.target.closest('.card-menu')) {
-                openBook(card.dataset.id);
-            }
-        });
-
-        const menuBtn = card.querySelector('.card-menu');
-        if (menuBtn) {
-            menuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showContextMenu(e, card.dataset.id);
+        // Add click handlers
+        container.querySelectorAll('.book-card').forEach(card => {
+            card.addEventListener('click', () => openBook(card.dataset.bookId));
+            card.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openBook(card.dataset.bookId);
+                }
             });
-        }
-    });
+        });
+    }
 }
 
-function generateBookCard(book) {
-    const progress = book.progress || 0;
-    const tags = (book.tags || '').split(',').filter(t => t.trim());
-    const badgesHtml = tags.slice(0, 2).map(t => 
-        `<span class="badge">${escapeHtml(t.trim())}</span>`
-    ).join('');
+// Virtualized Bookshelf for Performance
+class VirtualBookshelf {
+    constructor(containerId, itemHeight = 280, itemsPerRow = 4) {
+        this.container = document.getElementById(containerId);
+        this.itemHeight = itemHeight;
+        this.itemsPerRow = itemsPerRow;
+        this.books = [];
+        this.visibleRange = { start: 0, end: 0 };
+        this.scrollTimeout = null;
+        this.isInitialized = false; // Flag to prevent multiple initializations
+    }
 
-    return `
-        <article class="book-card" data-id="${book.id}" role="listitem" tabindex="0">
-            <div class="book-cover-container">
-                <img 
-                    class="book-cover" 
-                    src="/api/books/cover/${book.id}" 
-                    alt="${escapeHtml(book.title)} cover"
-                    loading="lazy"
-                    onerror="this.src='/frontend/assets/broken-image.svg'"
-                >
-                <svg class="progress-ring" viewBox="0 0 36 36">
-                    <circle class="progress-ring-bg" cx="18" cy="18" r="16"/>
-                    <circle class="progress-ring-fill" cx="18" cy="18" r="16" 
-                            stroke-dasharray="${progress}, 100"/>
-                    <text x="18" y="20" class="progress-text">${progress}%</text>
-                </svg>
+    setBooks(books) {
+        this.books = books;
+        if (!this.isInitialized) {
+            this.setupScrollListener();
+            this.isInitialized = true;
+        }
+        this.render();
+        this.updateVisibleRange(); // Initial update
+    }
+
+    setupScrollListener() {
+        if (!this.container) return;
+
+        const handleScroll = () => {
+            clearTimeout(this.scrollTimeout);
+            this.scrollTimeout = setTimeout(() => {
+                this.updateVisibleRange();
+            }, 50); // More frequent updates during scroll
+        };
+
+        // Use window scroll for simplicity, assuming the bookshelf is the main content
+        window.addEventListener('scroll', handleScroll);
+
+        // Also listen for resize events to re-calculate ranges
+        window.addEventListener('resize', () => {
+            clearTimeout(this.scrollTimeout);
+            this.scrollTimeout = setTimeout(() => {
+                this.updateVisibleRange();
+            }, 50);
+        });
+    }
+
+    updateVisibleRange() {
+        if (!this.container) return;
+
+        const containerRect = this.container.getBoundingClientRect();
+        const scrollTop = window.scrollY + containerRect.top; // Relative scroll within the container
+        const viewportHeight = window.innerHeight;
+
+        // Calculate the start and end rows that are potentially visible
+        const startRow = Math.floor(scrollTop / this.itemHeight);
+        const endRow = Math.ceil((scrollTop + viewportHeight) / this.itemHeight);
+
+        // Calculate the exact indices for the books array
+        this.visibleRange = {
+            // Ensure we don't render too far before the visible area, and not past the beginning
+            start: Math.max(0, startRow * this.itemsPerRow - this.itemsPerRow * 2),
+            // Ensure we render enough to fill the viewport and a bit more, and not past the end
+            end: Math.min(this.books.length, endRow * this.itemsPerRow + this.itemsPerRow * 2)
+        };
+
+        this.renderVisible();
+    }
+
+    renderVisible() {
+        if (!this.container) return;
+
+        const currentlyRenderedCount = this.container.children.length;
+        const neededCount = this.visibleRange.end - this.visibleRange.start;
+
+        // Only re-render if the number of needed items has significantly changed
+        if (Math.abs(currentlyRenderedCount - neededCount) > this.itemsPerRow) {
+            this.render();
+        } else {
+            // If counts are similar, update existing elements if needed (more complex optimization)
+            // For now, we'll stick to re-rendering the whole visible set if count changes substantially
+        }
+    }
+
+    render() {
+        if (!this.container) return;
+
+        const startIndex = this.visibleRange.start;
+        const endIndex = this.visibleRange.end;
+        const visibleBooks = this.books.slice(startIndex, endIndex);
+
+        // Calculate the total height needed for the container to enable scrolling
+        const totalHeight = this.books.length * this.itemHeight;
+        this.container.style.height = `${totalHeight}px`; // Set total height for scrollbar
+
+        // Render only the visible items, positioning them correctly
+        let html = '';
+        visibleBooks.forEach((book, index) => {
+            const bookIndexInAllBooks = startIndex + index;
+            const topOffset = bookIndexInAllBooks * this.itemHeight;
+            html += `
+                <div class="book-card" 
+                     data-book-id="${book.id}" 
+                     tabindex="0" 
+                     role="button" 
+                     aria-label="Open ${escapeHtml(book.title)}"
+                     style="position: absolute; top: ${topOffset}px; left: 0; width: 100%; height: ${this.itemHeight}px;">
+                    ${this.createBookCardContent(book)}
+                </div>
+            `;
+        });
+        this.container.innerHTML = html;
+
+        // Attach event listeners using event delegation on the container
+        this.attachEventListeners();
+    }
+
+    createBookCardContent(book) {
+        const tags = (book.tags || '').split(',').filter(t => t.trim());
+        const badgesHtml = tags.slice(0, 2).map(t =>
+            `<span class="badge">${escapeHtml(t.trim())}</span>`
+        ).join('');
+
+        return `
+            <div class="book-card-inner" style="height: ${this.itemHeight}px; display: flex; flex-direction: column; justify-content: space-between; padding: 10px;">
+                <div class="book-cover-container">
+                    <img 
+                        class="book-cover" 
+                        src="/api/books/cover/${book.id}" 
+                        alt="${escapeHtml(book.title)} cover"
+                        loading="lazy"
+                        onerror="this.src='/frontend/assets/broken-image.svg'"
+                        style="height: ${this.itemHeight * 0.7}px; object-fit: contain;">
+                </div>
+                <h3 class="book-title" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
+                <p class="book-author">${escapeHtml(book.author || 'Unknown Author')}</p>
+                <div class="badges">${badgesHtml}</div>
+                ${book.progress > 0 ? `
+                    <div class="book-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${book.progress}%"></div>
+                        </div>
+                        <span class="progress-text">${Math.round(book.progress)}%</span>
+                    </div>
+                ` : ''}
+                ${book.is_favorite ? '<span class="favorite-badge" style="position: absolute; top: 8px; right: 8px; font-size: 20px;">⭐</span>' : ''}
+                <button class="card-menu" aria-label="Book options" aria-haspopup="menu" style="position: absolute; top: 5px; right: 5px;">&#8942;</button>
             </div>
-            <h3 class="book-title" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
-            <p class="book-author">${escapeHtml(book.author || 'Unknown Author')}</p>
-            <div class="badges">${badgesHtml}</div>
-            <button class="card-menu" aria-label="Book options" aria-haspopup="menu">&#8942;</button>
-        </article>
-    `;
+        `;
+    }
+
+    attachEventListeners() {
+        // Use event delegation on the container
+        this.container.removeEventListener('click', this.handleClick);
+        this.removeEventListener('keypress', this.handleKeyPress);
+
+        this.handleClick = (e) => {
+            const card = e.target.closest('.book-card');
+            if (card) {
+                const menuButton = card.querySelector('.card-menu');
+                if (menuButton && menuButton.contains(e.target)) {
+                    e.stopPropagation(); // Prevent opening book if menu is clicked
+                    showContextMenu(e, card.dataset.bookId);
+                } else {
+                    openBook(card.dataset.bookId);
+                }
+            }
+        };
+
+        this.handleKeyPress = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                const card = e.target.closest('.book-card');
+                if (card) {
+                    e.preventDefault();
+                    openBook(card.dataset.bookId);
+                }
+            }
+        };
+
+        this.container.addEventListener('click', this.handleClick);
+        this.container.addEventListener('keypress', this.handleKeyPress);
+    }
+
+    // Method to get the singleton instance or create it
+    static getInstance(containerId, itemHeight = 280, itemsPerRow = 4) {
+        if (!VirtualBookshelf.instance) {
+            VirtualBookshelf.instance = new VirtualBookshelf(containerId, itemHeight, itemsPerRow);
+        }
+        return VirtualBookshelf.instance;
+    }
+}
+
+// Helper to get the singleton instance of VirtualBookshelf
+function getVirtualShelfInstance() {
+    return VirtualBookshelf.getInstance('all-books-grid');
+}
+
+// Initialize virtual shelf
+const virtualShelf = getVirtualShelfInstance();
+
+function renderBooks(books, containerId) {
+    if (containerId === 'all-books-grid') {
+        virtualShelf.setBooks(books);
+    } else {
+        // Legacy rendering for other grids like 'recently-read-grid'
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (books.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">No books yet. Upload your first book!</p>';
+            return;
+        }
+
+        // Use the same card creation logic as the virtual shelf for consistency
+        const virtualShelfInstance = getVirtualShelfInstance();
+        container.innerHTML = books.map(book => virtualShelfInstance.createBookCardContent(book)).join(''); // Use content method
+
+        // Add click handlers
+        container.querySelectorAll('.book-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                const menuButton = card.querySelector('.card-menu');
+                if (menuButton && menuButton.contains(e.target)) {
+                     e.stopPropagation(); // Prevent opening book if menu is clicked
+                     showContextMenu(e, card.dataset.bookId);
+                } else {
+                    openBook(card.dataset.bookId)
+                };
+            });
+            card.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openBook(card.dataset.bookId);
+                }
+            });
+        });
+    }
 }
 
 function renderRecentlyRead() {
@@ -414,23 +577,13 @@ function renderRecentlyRead() {
     }
 
     elements.recentlyReadSection.style.display = 'block';
-    elements.recentlyReadGrid.innerHTML = recentBooks
-        .map(book => book.snippet_html || generateBookCard(book))
-        .join('');
-
-    // Attach event listeners
-    elements.recentlyReadGrid.querySelectorAll('.book-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-            if (!e.target.closest('.card-menu')) {
-                openBook(card.dataset.id);
-            }
-        });
-    });
+    // Use the renderBooks function for consistency, specifying the container
+    renderBooks(recentBooks, 'recently-read-grid');
 }
 
 function renderShelves() {
     elements.shelvesList.innerHTML = allShelves.map(shelf => `
-        <li class="sidebar-item ${currentView === 'shelf:' + shelf.id ? 'active' : ''}" 
+        <li class="sidebar-item ${currentView === 'shelf:' + shelf.id ? 'active' : ''}"
             data-view="shelf:${shelf.id}">
             <span class="shelf-color" style="background: ${shelf.color || '#bb86fc'}"></span>
             <span>${escapeHtml(shelf.name)}</span>
@@ -443,7 +596,7 @@ function renderShelves() {
             const view = item.dataset.view;
             setActiveView(view);
             elements.libraryTitle.textContent = item.querySelector('span:last-child').textContent;
-            renderBooks();
+            renderBooks([], 'all-books-grid'); // Render books for the virtual shelf
         });
     });
 
@@ -462,7 +615,7 @@ function renderTags() {
     });
 
     elements.tagsList.innerHTML = Array.from(allTags).slice(0, 8).map(tag => `
-        <li class="sidebar-item ${currentView === 'tag:' + tag ? 'active' : ''}" 
+        <li class="sidebar-item ${currentView === 'tag:' + tag ? 'active' : ''}"
             data-view="tag:${tag}">
             <span class="sidebar-item-icon">&#127991;</span>
             <span>${escapeHtml(tag)}</span>
@@ -475,7 +628,7 @@ function renderTags() {
             const view = item.dataset.view;
             setActiveView(view);
             elements.libraryTitle.textContent = item.querySelector('span:last-child').textContent;
-            renderBooks();
+            renderBooks([], 'all-books-grid'); // Render books for the virtual shelf
         });
     });
 }
@@ -516,12 +669,13 @@ function handleSearch(e) {
     const query = e.target.value.trim();
 
     if (!query) {
-        renderBooks();
+        renderBooks([], 'all-books-grid'); // Re-render for virtual shelf
         return;
     }
 
+    // Use fuzzy search on the client-side for immediate results
     const results = window.fuzzySearch.search(query, allBooks);
-    
+
     if (results.length === 0) {
         elements.booksGrid.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
@@ -533,26 +687,8 @@ function handleSearch(e) {
         return;
     }
 
-    elements.booksGrid.innerHTML = results
-        .map(book => book.snippet_html || generateBookCard(book))
-        .join('');
-
-    // Re-attach event listeners
-    document.querySelectorAll('.book-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-            if (!e.target.closest('.card-menu')) {
-                openBook(card.dataset.id);
-            }
-        });
-
-        const menuBtn = card.querySelector('.card-menu');
-        if (menuBtn) {
-            menuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showContextMenu(e, card.dataset.id);
-            });
-        }
-    });
+    // Render search results using the virtual shelf's rendering mechanism
+    renderBooks(results, 'all-books-grid');
 }
 
 // Context Menu
@@ -560,11 +696,12 @@ function showContextMenu(e, bookId) {
     currentBookId = bookId;
     const menu = elements.contextMenu;
 
+    // Position the menu
     menu.style.left = `${e.clientX}px`;
     menu.style.top = `${e.clientY}px`;
     menu.classList.add('visible');
 
-    // Adjust position if overflowing
+    // Adjust position if overflowing viewport
     const rect = menu.getBoundingClientRect();
     if (rect.right > window.innerWidth) {
         menu.style.left = `${window.innerWidth - rect.width - 10}px`;
@@ -628,7 +765,7 @@ function resetUploadForm() {
 function handleFileDrop(e) {
     e.preventDefault();
     document.getElementById('drop-zone').classList.remove('dragover');
-    
+
     const file = e.dataTransfer.files[0];
     if (file) processFile(file);
 }
@@ -643,7 +780,7 @@ let selectedFile = null;
 function processFile(file) {
     const validTypes = ['application/epub+zip', 'application/pdf'];
     const validExtensions = ['.epub', '.pdf'];
-    
+
     const hasValidType = validTypes.includes(file.type);
     const hasValidExt = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
 
@@ -653,7 +790,7 @@ function processFile(file) {
     }
 
     selectedFile = file;
-    
+
     // Show form
     document.getElementById('drop-zone').style.display = 'none';
     document.getElementById('upload-form').style.display = 'block';
@@ -883,11 +1020,11 @@ function addToUndoStack(action) {
         data: action.data,
         timestamp: Date.now()
     });
-    
+
     if (undoStack.length > MAX_UNDO) {
         undoStack.shift();
     }
-    
+
     showUndoNotification(action.type);
 }
 
@@ -897,16 +1034,16 @@ function showUndoNotification(actionType) {
         move: 'Book moved',
         edit: 'Book edited'
     };
-    
+
     const toast = document.createElement('div');
     toast.className = 'toast info';
     toast.innerHTML = `
         <span>${messages[actionType] || 'Action completed'}</span>
         <button onclick="undoLastAction()" style="margin-left: 12px; padding: 4px 8px; background: var(--accent-primary); border: none; border-radius: 4px; cursor: pointer;">Undo</button>
     `;
-    
+
     elements.toastContainer.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
@@ -918,9 +1055,9 @@ async function undoLastAction() {
         showToast('Nothing to undo', 'info');
         return;
     }
-    
+
     const action = undoStack.pop();
-    
+
     try {
         switch (action.action) {
             case 'delete':
@@ -953,7 +1090,7 @@ async function undoLastAction() {
 // Quick filters
 function applyQuickFilter(filter) {
     let filtered = [...allBooks];
-    
+
     switch (filter) {
         case 'favorites':
             filtered = filtered.filter(b => b.is_favorite);
@@ -971,26 +1108,8 @@ function applyQuickFilter(filter) {
             filtered = filtered.filter(b => b.progress >= 95);
             break;
     }
-    
-    renderFilteredBooks(filtered);
-}
 
-function renderFilteredBooks(books) {
-    if (books.length === 0) {
-        elements.booksGrid.innerHTML = `
-            <div class="empty-state" style="grid-column: 1 / -1;">
-                <div class="empty-state-icon">&#128269;</div>
-                <h3 class="empty-state-title">No books match this filter</h3>
-            </div>
-        `;
-        return;
-    }
-    
-    elements.booksGrid.innerHTML = books
-        .map(book => book.snippet_html || generateBookCard(book))
-        .join('');
-    
-    attachBookCardListeners();
+    renderBooks(filtered, 'all-books-grid'); // Render filtered books using virtual shelf
 }
 
 // Delete Modal
@@ -1029,7 +1148,7 @@ async function handleDeleteConfirm() {
 
         if (data.success) {
             closeDeleteModal();
-            await loadBooks();
+            await loadBooks(); // Reload books to update the virtual shelf
             renderTags();
             updateFabVisibility();
         } else {
@@ -1080,7 +1199,7 @@ async function handleSettingsSave() {
 
 // Keyboard Shortcuts
 function handleKeyboard(e) {
-    // Don't trigger if typing in input
+    // Don't trigger if typing in input or textarea
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
     switch (e.key.toLowerCase()) {
@@ -1089,10 +1208,11 @@ function handleKeyboard(e) {
             openUploadModal();
             break;
         case 'escape':
+            // Close any visible modals
             document.querySelectorAll('.modal-overlay.visible').forEach(modal => {
                 modal.classList.remove('visible');
             });
-            hideContextMenu();
+            hideContextMenu(); // Hide context menu if open
             break;
     }
 }
@@ -1105,6 +1225,7 @@ function showToast(message, type = 'info') {
 
     elements.toastContainer.appendChild(toast);
 
+    // Remove toast after a delay
     setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
@@ -1118,3 +1239,32 @@ function escapeHtml(str) {
     div.textContent = str;
     return div.innerHTML;
 }
+
+// Debounce function for search input
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Fuzzy search initialization (assuming fuzzySearch library is available globally)
+// Example: window.fuzzySearch = new Fuse(allBooks, { keys: ['title', 'author', 'tags'] });
+// This should be called after allBooks is loaded.
+// For now, we assume it's handled elsewhere or available globally.
+// A more robust implementation would initialize it here after data load.
+
+// Initial call to renderTags after data loading is complete to ensure all tags are processed
+document.addEventListener('DOMContentLoaded', () => {
+    // Ensure initial render is called correctly
+    init();
+    // Render tags once books and shelves are loaded
+    loadData().then(() => {
+        renderTags();
+    });
+});
