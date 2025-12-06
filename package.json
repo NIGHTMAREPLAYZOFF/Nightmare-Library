@@ -2,13 +2,22 @@
   "name": "nightmare-library",
   "version": "1.0.0",
   "description": "A private digital library for EPUB and PDF books with obsidian-black theme",
+  "type": "module",
   "scripts": {
-    "dev": "cd replit-version && npm run dev",
-    "build": "cd replit-version && npm run build",
-    "start": "cd replit-version && npm start",
-    "cf:dev": "cd cloudflare-version && wrangler pages dev",
-    "cf:build": "cd cloudflare-version && npm run build",
-    "cf:deploy": "cd cloudflare-version && wrangler pages deploy"
+    "dev": "wrangler pages dev . --compatibility-date=2024-01-01",
+    "build": "echo 'No build step required for vanilla frontend'",
+    "deploy": "wrangler pages deploy .",
+    "db:migrate": "wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql",
+    "replit:dev": "cd replit-version && npm run dev",
+    "replit:start": "cd replit-version && npm start"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240117.0",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.22.4"
+  },
+  "dependencies": {
+    "hono": "^3.12.6"
   },
   "keywords": ["library", "epub", "pdf", "cloudflare-pages", "digital-library"],
   "author": "",

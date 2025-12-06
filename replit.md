@@ -2,28 +2,23 @@
 
 ## Overview
 
-A dual-structure digital library application designed for Cloudflare Pages deployment with a Replit-compatible development version. The project uses an obsidian-black theme with purple accents for a dark, modern aesthetic.
+A dual-structure digital library application. Root level is for Cloudflare Pages deployment, while `/replit-version` contains a development-friendly Express.js version.
 
 ## Project Structure
 
 ```
 nightmare-library/
-├── cloudflare-version/     # Production Cloudflare Pages structure
-│   ├── index.html          # Login page
-│   ├── frontend/           # Dashboard, reader, assets
-│   ├── functions/          # Cloudflare Workers backend
-│   ├── migrations/         # D1 database schema
-│   ├── wrangler.toml       # Cloudflare configuration
-│   └── CLOUDFLARE_SETUP.md # Deployment guide
+├── index.html              # Login page (Cloudflare)
+├── frontend/               # Shared frontend (HTML, CSS, JS)
+├── functions/              # Cloudflare Workers backend
+├── migrations/             # D1 database schema
+├── wrangler.toml           # Cloudflare configuration
+├── CLOUDFLARE_SETUP.md     # Deployment guide
 │
-├── replit-version/         # Development version
-│   ├── public/             # Frontend files
-│   ├── src/                # Express.js backend
-│   ├── database/           # SQLite storage
-│   └── uploads/            # Local file storage
-│
-├── package.json            # Root scripts
-└── README.md               # Project overview
+└── replit-version/         # Development version
+    ├── src/                # Express.js backend
+    ├── database/           # SQLite storage
+    └── uploads/            # Local file storage
 ```
 
 ## Architecture
@@ -40,18 +35,20 @@ nightmare-library/
 - Cookie name: `NMLR_SESSION`
 
 ### Storage
-- Multi-provider abstraction (R2, S3, GCS, Backblaze)
+- Cloudflare: Multi-provider abstraction (R2, S3, GCS, Backblaze)
+- Replit: Local filesystem storage
 - GitHub fallback: Creates private repos when primary storage fails
 
 ## Development Commands
 
-- `npm run dev` - Start Replit development server
-- `npm run cf:dev` - Start Cloudflare local development
-- `npm run cf:deploy` - Deploy to Cloudflare Pages
+- `npm run replit:dev` - Start Replit development server
+- `npm run dev` - Start Cloudflare local development
+- `npm run deploy` - Deploy to Cloudflare Pages
 
 ## Recent Changes
 
 - Initial project setup
+- Dual structure: Cloudflare at root, Replit in subfolder
 
 ## User Preferences
 
