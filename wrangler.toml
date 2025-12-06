@@ -11,22 +11,19 @@ pages_build_output_dir = "./"
 [[d1_databases]]
 binding = "DB"
 database_name = "nightmare-library-db"
-database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-# Example: database_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 
 # KV Namespace Bindings
 # After running: npx wrangler kv:namespace create "KV_SESSIONS"
 # Copy the id from the output and paste below
 [[kv_namespaces]]
 binding = "KV_SESSIONS"
-id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-# Example: id = "abc123def456ghi789jkl012mno345pq"
+id = "REPLACE_WITH_YOUR_KV_SESSIONS_ID"
 
 # After running: npx wrangler kv:namespace create "KV_CACHE"
 [[kv_namespaces]]
 binding = "KV_CACHE"
-id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-# Example: id = "xyz789abc123def456ghi012jkl345mn"
+id = "REPLACE_WITH_YOUR_KV_CACHE_ID"
 
 # Environment Variables (non-secret)
 [vars]
