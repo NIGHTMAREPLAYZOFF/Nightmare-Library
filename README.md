@@ -2,11 +2,6 @@
 
 A private, self-hosted digital library for managing and reading EPUB and PDF books with an obsidian-black themed interface.
 
-## Project Structure
-
-- **Root** - Cloudflare Pages version (production-ready)
-- **`/replit-version`** - Replit development version for local testing
-
 ## Features
 
 - Password-based authentication with JWT tokens
@@ -19,20 +14,16 @@ A private, self-hosted digital library for managing and reading EPUB and PDF boo
 - Multi-provider storage (R2, S3, GCS, Backblaze)
 - GitHub fallback storage for reliability
 
-## Cloudflare Deployment
+## Deployment
 
 See `CLOUDFLARE_SETUP.md` for complete deployment instructions.
 
 ```bash
 # Deploy to Cloudflare Pages
 npm run deploy
-```
 
-## Replit Development
-
-```bash
-# Run the Replit development version
-npm run replit:dev
+# Test locally with Wrangler
+npm run dev
 ```
 
 ## Theme

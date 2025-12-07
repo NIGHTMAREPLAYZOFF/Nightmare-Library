@@ -3,29 +3,17 @@ modules = ["nodejs-20"]
 expertMode = true
 
 [workflows]
-runButton = "Project"
+runButton = "Info"
 
 [[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
-
-[[workflows.workflow]]
-name = "Start application"
+name = "Info"
+mode = "sequential"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd replit-version && npm run dev"
-waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
+args = "echo '╔════════════════════════════════════════════════════════╗' && echo '║   Nightmare Library - Cloudflare Pages Project        ║' && echo '╚════════════════════════════════════════════════════════╝' && echo '' && echo 'This project is designed for Cloudflare Pages deployment.' && echo '' && echo '📖 Setup Guide: See CLOUDFLARE_SETUP.md' && echo '🚀 Deploy: npm run deploy' && echo '🧪 Local Test: npm run dev' && echo '' && echo 'Note: This Repl is for development only.' && echo 'Deploy to Cloudflare Pages for production use.'"
 
 [[ports]]
-localPort = 5000
+localPort = 8788
 externalPort = 80
