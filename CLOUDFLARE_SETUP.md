@@ -126,29 +126,33 @@ Update `wrangler.toml` with the namespace IDs.
 
 ### Required Secrets
 
+**IMPORTANT:** All storage provider credentials MUST be set as encrypted secrets, never commit them to your repository!
+
 ```bash
-# Authentication
+# Authentication (REQUIRED)
 npx wrangler secret put PASSWORD
 npx wrangler secret put JWT_SECRET
 
-# Google Drive (if using)
+# Google Drive (Primary - RECOMMENDED)
 npx wrangler secret put GDRIVE_ACCESS_TOKEN
-npx wrangler secret put GDRIVE_FOLDER_ID
+npx wrangler secret put GDRIVE_FOLDER_ID  # Optional
 
-# Dropbox (if using)
+# Dropbox (Secondary)
 npx wrangler secret put DROPBOX_ACCESS_TOKEN
-npx wrangler secret put DROPBOX_PATH
+npx wrangler secret put DROPBOX_PATH  # Optional
 
-# Mega.nz (if using)
+# Mega.nz (Tertiary)
 npx wrangler secret put MEGA_EMAIL
 npx wrangler secret put MEGA_PASSWORD
-npx wrangler secret put MEGA_FOLDER_ID
+npx wrangler secret put MEGA_FOLDER_ID  # Optional
 
-# GitHub (fallback - always recommended)
+# GitHub (Final Fallback - STRONGLY RECOMMENDED)
 npx wrangler secret put GITHUB_TOKEN
 npx wrangler secret put GITHUB_OWNER
-npx wrangler secret put GITHUB_REPO
+npx wrangler secret put GITHUB_REPO  # Optional, defaults to 'nightmare-library-storage'
 ```
+
+**Security Best Practice:** Set these via Cloudflare Dashboard under "Settings > Environment variables" as "Encrypted" variables.
 
 ## 4. Deploy to Cloudflare Pages
 

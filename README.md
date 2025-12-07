@@ -14,17 +14,65 @@ A private, self-hosted digital library for managing and reading EPUB and PDF boo
 - Multi-provider storage (R2, S3, GCS, Backblaze)
 - GitHub fallback storage for reliability
 
-## Deployment
+## Quick Start
 
-See `CLOUDFLARE_SETUP.md` for complete deployment instructions.
-
+### 1. Clone and Install
 ```bash
+git clone <your-repo-url>
+cd nightmare-library
+npm install
+```
+
+### 2. Configure Cloudflare Resources
+```bash
+# Create D1 database
+npx wrangler d1 create nightmare-library-db
+
+# Create KV namespaces
+npx wrangler kv:namespace create "KV_SESSIONS"
+npx wrangler kv:namespace create "KV_CACHE"
+npx wrangler kv:namespace create "KV_RATE_LIMIT"
+
+# Update wrangler.toml with the IDs from above commands
+```
+
+### 3. Set Secrets
+```bash
+# Required secrets
+npx wrangler secret put PASSWORD
+npx wrangler secret put JWT_SECRET
+
+# At least one storage provider (GitHub recommended for fallback)
+npx wrangler secret put GITHUB_TOKEN
+npx wrangler secret put GITHUB_OWNER
+```
+
+### 4. Run Migrations
+```bash
+npm run db:migrate:all
+```
+
+### 5. Deploy
+```bash
+# Validate configuration first
+npm run predeploy
+
 # Deploy to Cloudflare Pages
 npm run deploy
+```
 
+## Local Development
+
+```bash
 # Test locally with Wrangler
 npm run dev
 ```
+
+Visit http://localhost:8788 to access your local instance.
+
+## Deployment
+
+See `CLOUDFLARE_SETUP.md` for complete deployment instructions including storage provider setup.
 
 ## Theme
 

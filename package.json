@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "wrangler pages dev . --compatibility-date=2024-01-01",
     "build": "echo 'No build step required for vanilla frontend'",
+    "predeploy": "node scripts/pre-deploy-check.js",
     "deploy": "wrangler pages deploy .",
-    "db:migrate": "wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql"
+    "db:migrate": "wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql",
+    "db:migrate:all": "wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql && wrangler d1 execute nightmare-library-db --remote --file=./migrations/0002_add_features.sql && wrangler d1 execute nightmare-library-db --remote --file=./migrations/0003_add_content_index.sql && wrangler d1 execute nightmare-library-db --remote --file=./migrations/0004_add_annotations.sql"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240117.0",
