@@ -3,24 +3,38 @@
  * Backend MUST return pre-rendered HTML to frontend
  */
 
-export function escapeHtml(text: string): string {
-  const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  };
-  return text.replace(/[&<>"']/g, m => map[m]);
+/**
+ * Escape HTML to prevent XSS. This combines the two conflicting versions (lines 6 and 92)
+ * into a single, safe, and robust function.
+ */
+export function escapeHtml(str: string | null | undefined): string {
+    // Check for null, undefined, or empty string input first
+    if (!str) {
+        return '';
+    }
+    
+    // Use the comprehensive map-based replacement from the original Line 6 function,
+    // which is arguably cleaner than multiple .replace() calls.
+    const map: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    
+    // Ensure input is treated as a string before replacing
+    return String(str).replace(/[&<>"']/g, m => map[m]);
 }
 
-export function generateBookCardSnippet(book: any): string {
-  const title = escapeHtml(book.title || 'Untitled');
-  const author = escapeHtml(book.author || 'Unknown Author');
-  const progress = book.progress || 0;
-  const tags = (book.tags || '').split(',').filter((t: string) => t.trim());
 
-  return `<article class="book-card" data-id="${escapeHtml(book.id)}" role="listitem" tabindex="0">
+export function generateBookCardSnippet(book: any): string {
+    const title = escapeHtml(book.title || 'Untitled');
+    const author = escapeHtml(book.author || 'Unknown Author');
+    const progress = book.progress || 0;
+    const tags = (book.tags || '').split(',').filter((t: string) => t.trim());
+
+    return `<article class="book-card" data-id="${escapeHtml(book.id)}" role="listitem" tabindex="0">
     <div class="book-cover-container">
       <img 
         class="book-cover" 
@@ -46,19 +60,19 @@ export function generateBookCardSnippet(book: any): string {
 }
 
 export function generateShelfItemSnippet(shelf: any): string {
-  const name = escapeHtml(shelf.name);
-  const color = escapeHtml(shelf.color || '#bb86fc');
+    const name = escapeHtml(shelf.name);
+    const color = escapeHtml(shelf.color || '#bb86fc');
 
-  return `<li class="sidebar-item" data-view="shelf:${escapeHtml(shelf.id)}">
+    return `<li class="sidebar-item" data-view="shelf:${escapeHtml(shelf.id)}">
     <span class="shelf-color" style="background: ${color};"></span>
     <span>${name}</span>
   </li>`;
 }
 
 export function generateTagItemSnippet(tag: string): string {
-  const escapedTag = escapeHtml(tag);
+    const escapedTag = escapeHtml(tag);
 
-  return `<li class="sidebar-item" data-view="tag:${escapedTag}">
+    return `<li class="sidebar-item" data-view="tag:${escapedTag}">
     <span class="sidebar-item-icon">🏷️</span>
     <span>${escapedTag}</span>
   </li>`;
@@ -70,49 +84,36 @@ export function generateTagItemSnippet(tag: string): string {
  */
 
 export interface Book {
-  id: string;
-  title: string;
-  author: string | null;
-  tags: string | null;
-  cover_url: string | null;
-  file_type: string;
-  progress?: number;
+    id: string;
+    title: string;
+    author: string | null;
+    tags: string | null;
+    cover_url: string | null;
+    file_type: string;
+    progress?: number;
 }
 
 export interface Shelf {
-  id: string;
-  name: string;
-  color: string;
-  bookIds?: string[];
-}
-
-/**
- * Escape HTML to prevent XSS
- */
-export function escapeHtml(str: string | null | undefined): string {
-  if (!str) return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    id: string;
+    name: string;
+    color: string;
+    bookIds?: string[];
 }
 
 /**
  * Generate book card HTML snippet
  */
 export function generateBookCardHtml(book: Book): string {
-  const progress = book.progress || 0;
-  const title = escapeHtml(book.title);
-  const author = escapeHtml(book.author) || 'Unknown Author';
-  const tags = (book.tags || '').split(',').filter(t => t.trim());
-  
-  const badgesHtml = tags.slice(0, 2).map(t => 
-    `<span class="badge">${escapeHtml(t.trim())}</span>`
-  ).join('');
+    const progress = book.progress || 0;
+    const title = escapeHtml(book.title);
+    const author = escapeHtml(book.author) || 'Unknown Author';
+    const tags = (book.tags || '').split(',').filter(t => t.trim());
+    
+    const badgesHtml = tags.slice(0, 2).map(t => 
+        `<span class="badge">${escapeHtml(t.trim())}</span>`
+    ).join('');
 
-  return `<article class="book-card" data-id="${book.id}" role="listitem" tabindex="0">
+    return `<article class="book-card" data-id="${book.id}" role="listitem" tabindex="0">
     <div class="book-cover-container">
         <img 
             class="book-cover" 
@@ -139,7 +140,7 @@ export function generateBookCardHtml(book: Book): string {
  * Generate shelf item HTML for sidebar
  */
 export function generateShelfItemHtml(shelf: Shelf, isActive: boolean = false): string {
-  return `<li class="sidebar-item ${isActive ? 'active' : ''}" data-view="shelf:${shelf.id}">
+    return `<li class="sidebar-item ${isActive ? 'active' : ''}" data-view="shelf:${shelf.id}">
     <span class="shelf-color" style="background: ${escapeHtml(shelf.color) || '#bb86fc'}"></span>
     <span>${escapeHtml(shelf.name)}</span>
 </li>`;
@@ -149,7 +150,7 @@ export function generateShelfItemHtml(shelf: Shelf, isActive: boolean = false): 
  * Generate upload tile HTML
  */
 export function generateUploadTileHtml(): string {
-  return `<div class="upload-tile" id="upload-tile" onclick="openUploadModal()">
+    return `<div class="upload-tile" id="upload-tile" onclick="openUploadModal()">
     <div class="upload-tile-icon">+</div>
     <p class="upload-tile-text">Upload Book</p>
 </div>`;
@@ -159,7 +160,7 @@ export function generateUploadTileHtml(): string {
  * Generate empty state HTML
  */
 export function generateEmptyStateHtml(icon: string, title: string, text: string): string {
-  return `<div class="empty-state">
+    return `<div class="empty-state">
     <div class="empty-state-icon">${icon}</div>
     <h3 class="empty-state-title">${escapeHtml(title)}</h3>
     <p class="empty-state-text">${escapeHtml(text)}</p>
@@ -170,10 +171,10 @@ export function generateEmptyStateHtml(icon: string, title: string, text: string
  * Generate skeleton loader HTML
  */
 export function generateSkeletonHtml(count: number = 4): string {
-  const skeleton = `<div class="book-card">
+    const skeleton = `<div class="book-card">
     <div class="skeleton skeleton-cover"></div>
     <div class="skeleton skeleton-text"></div>
     <div class="skeleton skeleton-text short"></div>
 </div>`;
-  return Array(count).fill(skeleton).join('');
+    return Array(count).fill(skeleton).join('');
 }
