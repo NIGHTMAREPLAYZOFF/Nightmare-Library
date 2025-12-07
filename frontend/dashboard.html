@@ -329,10 +329,10 @@
     <script type="module" src="/frontend/scripts/reading-gamification.js"></script>
     <script type="module" src="/frontend/scripts/main.js"></script>
     <script>
-        // Register service worker for offline support
+        // Register service worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/frontend/scripts/service-worker.js')
-                .then(reg => console.log('Service Worker registered'))
+            navigator.serviceWorker.register('/frontend/sw.js')
+                .then(() => console.log('Service Worker registered'))
                 .catch(err => console.error('Service Worker registration failed:', err));
         }
     </script>

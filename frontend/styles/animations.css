@@ -1,0 +1,306 @@
+
+/**
+ * Nightmare Library - Animation Styles
+ * Smooth transitions and micro-interactions
+ */
+
+/* Fade In */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide Up */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide Down */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale In */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Pulse */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Shimmer Loading */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Bounce */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Rotate */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Glow */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(187, 134, 252, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(187, 134, 252, 0.6);
+  }
+}
+
+/* Progress Fill */
+@keyframes progressFill {
+  from {
+    width: 0%;
+  }
+}
+
+/* Card Entrance */
+.book-card {
+  animation: fadeIn 0.4s ease-out, slideUp 0.4s ease-out;
+}
+
+.book-card:nth-child(1) { animation-delay: 0s; }
+.book-card:nth-child(2) { animation-delay: 0.05s; }
+.book-card:nth-child(3) { animation-delay: 0.1s; }
+.book-card:nth-child(4) { animation-delay: 0.15s; }
+.book-card:nth-child(5) { animation-delay: 0.2s; }
+.book-card:nth-child(6) { animation-delay: 0.25s; }
+
+/* Hover Effects */
+.book-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.book-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+}
+
+.book-card:active {
+  transform: translateY(-4px);
+}
+
+/* Button Animations */
+.btn, .icon-btn {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before, .icon-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:active::before, .icon-btn:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Modal Animations */
+.modal-overlay {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* FAB Animation */
+.fab {
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.fab.visible {
+  animation: bounce 0.6s ease-in-out;
+}
+
+.fab:hover {
+  transform: scale(1.1) rotate(90deg);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  animation: rotate 1s linear infinite;
+}
+
+/* Shimmer Effect for Loading */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 0%,
+    var(--bg-hover) 50%,
+    var(--bg-card) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Progress Bar Animation */
+.progress-fill {
+  transition: width 0.5s ease-out;
+}
+
+/* Toast Notification */
+.toast {
+  animation: slideDown 0.3s ease-out;
+}
+
+.toast.removing {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Sidebar Slide */
+.sidebar {
+  transition: transform 0.3s ease-out, width 0.3s ease-out;
+}
+
+.sidebar.collapsed {
+  transform: translateX(-100%);
+}
+
+/* Reader Controls Slide */
+.reader-header, .reader-nav {
+  transition: transform 0.3s ease-out;
+}
+
+/* Page Turn Animation */
+.page-turn-left {
+  animation: pageTurnLeft 0.6s ease-out;
+}
+
+.page-turn-right {
+  animation: pageTurnRight 0.6s ease-out;
+}
+
+@keyframes pageTurnLeft {
+  0% {
+    transform: rotateY(0deg);
+    transform-origin: left;
+  }
+  100% {
+    transform: rotateY(-180deg);
+    transform-origin: left;
+  }
+}
+
+@keyframes pageTurnRight {
+  0% {
+    transform: rotateY(0deg);
+    transform-origin: right;
+  }
+  100% {
+    transform: rotateY(180deg);
+    transform-origin: right;
+  }
+}
+
+/* Highlight Animation */
+.highlight {
+  animation: glow 1.5s ease-in-out infinite;
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Stagger Animation Utility */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus Animations */
+input:focus, textarea:focus, select:focus {
+  animation: glow 0.3s ease-out;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

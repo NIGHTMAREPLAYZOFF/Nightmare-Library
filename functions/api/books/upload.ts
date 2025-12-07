@@ -5,6 +5,7 @@
 
 import { uploadFile, getStorageConfigs } from '../../storage-proxy';
 import { generateBookCardHtml } from '../../html-snippets';
+import { checkRateLimit } from '../_rate-limit';
 
 interface Env {
   DB: D1Database;
@@ -21,10 +22,89 @@ interface Env {
   GITHUB_REPO?: string;
 }
 
+async function indexBookContent(db: D1Database, bookId: string, fileData: ArrayBuffer, fileType: string) {
+  try {
+    const decoder = new TextDecoder();
+    const text = decoder.decode(fileData);
+    
+    // Extract text content in chunks
+    const chunkSize = 1000;
+    const chunks: string[] = [];
+    
+    if (fileType === 'epub') {
+      // Simple EPUB text extraction
+      const contentMatches = text.matchAll(/<p[^>]*>(.*?)<\/p>/gs);
+      let position = 0;
+      
+      for (const match of contentMatches) {
+        const content = match[1].replace(/<[^>]+>/g, '').trim();
+        if (content.length > 50) {
+          chunks.push(content);
+          
+          // Insert into index
+          await db.prepare(`
+            INSERT INTO book_content_index (book_id, chapter, snippet, content_text, position, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).bind(
+            bookId,
+            'Chapter',
+            content.substring(0, 100),
+            content,
+            position++,
+            Date.now()
+          ).run();
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Indexing error:', error);
+  }
+}
+
+async function extractMetadataFromFile(fileData: ArrayBuffer, fileType: string) {
+  const decoder = new TextDecoder();
+  const text = decoder.decode(fileData.slice(0, 10000));
+  
+  const metadata: any = {
+    title: null,
+    author: null,
+    pageCount: 0
+  };
+
+  if (fileType === 'epub') {
+    const titleMatch = text.match(/<dc:title[^>]*>([^<]+)<\/dc:title>/i);
+    if (titleMatch) metadata.title = titleMatch[1];
+    
+    const authorMatch = text.match(/<dc:creator[^>]*>([^<]+)<\/dc:creator>/i);
+    if (authorMatch) metadata.author = authorMatch[1];
+  }
+  
+  return metadata;
+}
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
 
   try {
+    // Rate limiting: 10 uploads per minute
+    const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const rateLimit = await checkRateLimit(env as any, clientIP, 'upload', {
+      maxRequests: 10,
+      windowMs: 60000
+    });
+
+    if (!rateLimit.allowed) {
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'Too many uploads. Please try again later.',
+        resetAt: rateLimit.resetAt
+      }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const title = formData.get('title') as string;
@@ -73,6 +153,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Get file data
     const fileData = await file.arrayBuffer();
+
+    // Extract metadata using WASM for better performance
+    let extractedMetadata = null;
+    try {
+      // Note: WASM module would be imported from compiled wasm-dist
+      // For now, we'll use basic extraction as fallback
+      const metadata = await extractMetadataFromFile(fileData, fileType);
+      extractedMetadata = metadata;
+    } catch (error) {
+      console.error('WASM extraction failed, using fallback:', error);
+    }
 
     // Get cascading storage configs (GDrive -> Dropbox -> Mega -> GitHub)
     const storageConfigs = getStorageConfigs(env as unknown as Record<string, string>);
@@ -150,9 +241,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       uploadResult.storageId,
       fileType,
       fileData.byteLength,
-      finalTags, // Use finalTags here
+      finalTags,
       now
     ).run();
+
+    // Index content for full-text search (async, don't wait)
+    indexBookContent(env.DB, bookId, fileData, fileType).catch(err => 
+      console.error('Content indexing failed:', err)
+    );
 
     // Clear cache
     await env.KV_CACHE.delete('books_list');
