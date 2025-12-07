@@ -365,7 +365,13 @@ async function loadBooks() {
 
         if (data.success) {
             allBooks = data.books || [];
-            renderBooks([], 'all-books-grid'); // Initial render for virtual shelf
+            
+            // Initialize fuzzy search with books
+            if (window.fuzzySearch) {
+                window.fuzzySearch.setBooks(allBooks);
+            }
+            
+            renderBooks([], 'all-books-grid');
             renderRecentlyRead();
             updateFabVisibility();
         }
@@ -443,17 +449,19 @@ class VirtualBookshelf {
         this.books = [];
         this.visibleRange = { start: 0, end: 0 };
         this.scrollTimeout = null;
-        this.isInitialized = false; // Flag to prevent multiple initializations
+        this.isInitialized = false;
     }
 
     setBooks(books) {
-        this.books = books;
+        // If no books provided, use all books from global state
+        this.books = books && books.length > 0 ? books : allBooks;
+        
         if (!this.isInitialized) {
             this.setupScrollListener();
             this.isInitialized = true;
         }
         this.render();
-        this.updateVisibleRange(); // Initial update
+        this.updateVisibleRange();
     }
 
     setupScrollListener() {
@@ -561,16 +569,23 @@ class VirtualBookshelf {
         this.attachEventListeners();
     }
 
+    createBookCard(book) {
+        const card = createElement('div', {
+            className: 'book-card',
+            dataset: { bookId: book.id },
+            tabindex: '0',
+            role: 'button',
+            'aria-label': `Open ${book.title || 'book'}`
+        });
+        
+        const content = this.createBookCardContent(book);
+        card.appendChild(content);
+        return card;
+    }
+
     createBookCardContent(book) {
         const inner = createElement('div', {
-            className: 'book-card-inner',
-            style: {
-                height: `${this.itemHeight}px`,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                padding: '10px'
-            }
+            className: 'book-card-inner'
         });
 
         // Cover container
@@ -705,12 +720,10 @@ function getVirtualShelfInstance() {
     return VirtualBookshelf.getInstance('all-books-grid');
 }
 
-// Initialize virtual shelf
-const virtualShelf = getVirtualShelfInstance();
-
 function renderBooks(books, containerId) {
     if (containerId === 'all-books-grid') {
-        virtualShelf.setBooks(books);
+        const virtualShelfInstance = getVirtualShelfInstance();
+        virtualShelfInstance.setBooks(books);
     } else {
         // Legacy rendering for other grids like 'recently-read-grid'
         const container = document.getElementById(containerId);

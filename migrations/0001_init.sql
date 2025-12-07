@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS books (
     total_pages INTEGER,
     uploaded_at INTEGER NOT NULL,
     last_read_at INTEGER,
-    last_read_position INTEGER DEFAULT 0
+    last_read_position INTEGER DEFAULT 0,
+    sort_order INTEGER DEFAULT 0
 );
 
 -- Shelves table

@@ -32,9 +32,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const tags = formData.get('tags') as string || null;
 
     if (!file) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        message: 'No file provided' 
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'No file provided'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -42,9 +42,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     if (!title) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        message: 'Title is required' 
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'Title is required'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -57,9 +57,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const isPdf = fileName.endsWith('.pdf');
 
     if (!isEpub && !isPdf) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        message: 'Only EPUB and PDF files are supported' 
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'Only EPUB and PDF files are supported'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -76,11 +76,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Get cascading storage configs (GDrive -> Dropbox -> Mega -> GitHub)
     const storageConfigs = getStorageConfigs(env as unknown as Record<string, string>);
-    
+
     if (storageConfigs.length === 0) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        message: 'No storage providers configured' 
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'No storage providers configured'
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -91,9 +91,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const uploadResult = await uploadFile(storageConfigs, `${bookId}.${fileType}`, fileData, contentType);
 
     if (!uploadResult.success) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        message: 'All storage providers failed: ' + uploadResult.error 
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'All storage providers failed: ' + uploadResult.error
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -101,9 +101,41 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // Determine which storage type was used
-    const storageType = uploadResult.storageId?.includes('/') ? 'github' : 
+    const storageType = uploadResult.storageId?.includes('/') ? 'github' :
                        uploadResult.url?.includes('drive.google.com') ? 'gdrive' :
                        uploadResult.url?.includes('dropbox') ? 'dropbox' : 'mega';
+
+    // Placeholder for filePath and coverPath, as they are not directly available from uploadResult in this snippet
+    // In a real implementation, these would be derived from uploadResult.storageId or similar.
+    const filePath = uploadResult.storageId || uploadResult.url || '';
+    const coverPath = null; // Assuming cover image is not generated or uploaded here.
+
+    // Auto-generate tags if none provided using basic genre detection
+    let finalTags = tags;
+    if (!tags || tags.trim().length === 0) {
+      const lowerTitle = title.toLowerCase();
+      const lowerAuthor = (author || '').toLowerCase();
+      const autoTags = [];
+
+      // Simple genre detection based on keywords
+      if (lowerTitle.includes('fantasy') || lowerTitle.includes('magic') || lowerTitle.includes('dragon')) {
+        autoTags.push('fantasy');
+      }
+      if (lowerTitle.includes('science') || lowerTitle.includes('space') || lowerTitle.includes('future')) {
+        autoTags.push('scifi');
+      }
+      if (lowerTitle.includes('mystery') || lowerTitle.includes('detective') || lowerTitle.includes('crime')) {
+        autoTags.push('mystery');
+      }
+      if (lowerTitle.includes('romance') || lowerTitle.includes('love')) {
+        autoTags.push('romance');
+      }
+      if (lowerTitle.includes('history') || lowerTitle.includes('historical')) {
+        autoTags.push('history');
+      }
+
+      finalTags = autoTags.length > 0 ? autoTags.join(',') : 'general';
+    }
 
     // Insert into database
     const now = Date.now();
@@ -118,7 +150,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       uploadResult.storageId,
       fileType,
       fileData.byteLength,
-      tags,
+      finalTags, // Use finalTags here
       now
     ).run();
 
@@ -129,13 +161,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       id: bookId,
       title,
       author,
-      tags,
+      tags: finalTags, // Use finalTags here
       file_type: fileType,
       progress: 0,
       cover_url: null
     };
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       success: true,
       book: {
         ...book,
@@ -147,9 +179,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   } catch (error) {
     console.error('Upload error:', error);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      message: 'Upload failed' 
+    return new Response(JSON.stringify({
+      success: false,
+      message: 'Upload failed'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

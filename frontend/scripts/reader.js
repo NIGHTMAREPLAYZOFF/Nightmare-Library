@@ -7,6 +7,10 @@ import { createElement, createElementWithText, batchAppend, clearElement, escape
 
 // State
 let book = null;
+
+let readingStartTime = null;
+let readingStartPage = 0;
+
 let rendition = null;
 let pdfDoc = null;
 let currentPage = 1;
@@ -68,6 +72,12 @@ async function init() {
     // Start analytics session
     if (window.readingAnalytics) {
         window.readingAnalytics.startSession(bookId);
+    }
+    
+    // Track reading start for gamification
+    if (window.gamification) {
+        readingStartTime = Date.now();
+        readingStartPage = currentPage;
     }
 
     // Show shortcuts hint briefly
@@ -817,6 +827,20 @@ window.addEventListener('unload', () => {
         // Track if book is finished
         if (progress >= 95) {
             window.readingAnalytics.trackBookFinished(bookId);
+            
+            // Award completion XP
+            if (window.gamification) {
+                window.gamification.completeBook();
+            }
+        }
+    }
+    
+    // Track reading session for gamification
+    if (window.gamification && readingStartTime) {
+        const timeMinutes = (Date.now() - readingStartTime) / 1000 / 60;
+        const pagesRead = currentPage - readingStartPage;
+        if (timeMinutes > 1 && pagesRead > 0) {
+            window.gamification.trackReadingSession(pagesRead, timeMinutes);
         }
     }
 });
