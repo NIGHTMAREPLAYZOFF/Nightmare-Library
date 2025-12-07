@@ -4,6 +4,8 @@
  * Visual bookmarks with emoji indicators
  */
 
+import { createElement, createElementWithText, batchAppend, escapeHtml } from './dom-helpers.js';
+
 class EmojiBookmarks {
     constructor() {
         this.bookmarks = this.loadBookmarks();
@@ -49,43 +51,86 @@ class EmojiBookmarks {
         return this.bookmarks[bookId] || [];
     }
 
-    renderBookmarkUI(bookId) {
+    createBookmarkUI(bookId) {
         const bookmarks = this.getBookmarks(bookId);
         
-        return `
-            <div class="bookmark-panel">
-                <h3>Bookmarks</h3>
-                <div class="bookmark-list">
-                    ${bookmarks.map(b => `
-                        <div class="bookmark-item" data-position="${b.position}">
-                            <span class="bookmark-emoji">${b.emoji}</span>
-                            <span class="bookmark-note">${b.note || 'No note'}</span>
-                            <button onclick="emojiBookmarks.removeBookmark('${bookId}', '${b.id}')">×</button>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="add-bookmark">
-                    <select id="emoji-select">
-                        ${this.emojis.map(e => `<option value="${e}">${e}</option>`).join('')}
-                    </select>
-                    <input type="text" id="bookmark-note" placeholder="Add note...">
-                    <button onclick="emojiBookmarks.addBookmarkFromUI('${bookId}')">Add</button>
-                </div>
-            </div>
-        `;
+        const panel = createElement('div', { className: 'bookmark-panel' });
+        
+        // Title
+        const title = createElementWithText('h3', 'Bookmarks');
+        panel.appendChild(title);
+        
+        // Bookmark list
+        const list = createElement('div', { className: 'bookmark-list' });
+        
+        bookmarks.forEach(bookmark => {
+            const item = createElement('div', {
+                className: 'bookmark-item',
+                dataset: { position: bookmark.position }
+            });
+            
+            const emojiSpan = createElementWithText('span', bookmark.emoji, {
+                className: 'bookmark-emoji'
+            });
+            
+            const noteSpan = createElementWithText('span', bookmark.note || 'No note', {
+                className: 'bookmark-note'
+            });
+            
+            const deleteBtn = createElementWithText('button', '×');
+            deleteBtn.onclick = () => this.removeBookmark(bookId, bookmark.id);
+            
+            item.appendChild(emojiSpan);
+            item.appendChild(noteSpan);
+            item.appendChild(deleteBtn);
+            list.appendChild(item);
+        });
+        
+        panel.appendChild(list);
+        
+        // Add bookmark section
+        const addSection = createElement('div', { className: 'add-bookmark' });
+        
+        const emojiSelect = createElement('select', { id: 'emoji-select' });
+        this.emojis.forEach(emoji => {
+            const option = createElementWithText('option', emoji, { value: emoji });
+            emojiSelect.appendChild(option);
+        });
+        
+        const noteInput = createElement('input', {
+            type: 'text',
+            id: 'bookmark-note',
+            placeholder: 'Add note...'
+        });
+        
+        const addBtn = createElementWithText('button', 'Add');
+        addBtn.onclick = () => this.addBookmarkFromUI(bookId);
+        
+        addSection.appendChild(emojiSelect);
+        addSection.appendChild(noteInput);
+        addSection.appendChild(addBtn);
+        panel.appendChild(addSection);
+        
+        return panel;
     }
 
     addBookmarkFromUI(bookId) {
-        const emoji = document.getElementById('emoji-select').value;
-        const note = document.getElementById('bookmark-note').value;
+        const emojiSelect = document.getElementById('emoji-select');
+        const noteInput = document.getElementById('bookmark-note');
+        
+        if (!emojiSelect || !noteInput) return;
+        
+        const emoji = emojiSelect.value;
+        const note = noteInput.value;
         const position = window.currentReadingPosition || 0;
 
         this.addBookmark(bookId, position, emoji, note);
         
-        // Refresh UI
+        // Refresh UI safely
         const panel = document.querySelector('.bookmark-panel');
-        if (panel) {
-            panel.outerHTML = this.renderBookmarkUI(bookId);
+        if (panel && panel.parentNode) {
+            const newPanel = this.createBookmarkUI(bookId);
+            panel.parentNode.replaceChild(newPanel, panel);
         }
     }
 }

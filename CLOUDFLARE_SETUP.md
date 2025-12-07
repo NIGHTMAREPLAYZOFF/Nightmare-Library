@@ -224,3 +224,244 @@ GITHUB_OWNER=your-github-username
 - **Dropbox**: Check storage quota in Dropbox settings
 - **Mega.nz**: Check usage in Mega.nz web interface  
 - **GitHub**: The system automatically prevents exceeding 4GB limit
+# Cloudflare Pages Deployment Guide
+
+## Prerequisites
+
+- Cloudflare account with Pages access
+- Wrangler CLI installed: `npm install -g wrangler`
+- Git repository with your code
+
+## Step 1: Install Dependencies
+
+```bash
+npm install
+```
+
+## Step 2: Create D1 Database
+
+```bash
+# Create the database
+npx wrangler d1 create nightmare-library-db
+
+# Copy the database_id from the output
+# Update wrangler.toml with the database_id
+```
+
+## Step 3: Run Database Migrations
+
+```bash
+# Execute initial migration
+npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql
+
+# Execute features migration
+npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/0002_add_features.sql
+```
+
+## Step 4: Create KV Namespaces
+
+```bash
+# Create KV namespaces for sessions, cache, and rate limiting
+npx wrangler kv:namespace create "KV_SESSIONS"
+npx wrangler kv:namespace create "KV_CACHE"
+npx wrangler kv:namespace create "KV_RATE_LIMIT"
+
+# Each command will output an ID - copy these IDs
+# Update wrangler.toml with the namespace IDs
+```
+
+## Step 5: Configure Secrets
+
+### Required Secrets
+
+1. **PASSWORD** - Your login password
+   ```bash
+   npx wrangler secret put PASSWORD
+   # Enter a strong password (min 8 chars, recommend 16+)
+   ```
+
+2. **JWT_SECRET** - Session token secret
+   ```bash
+   # Generate a random secret
+   openssl rand -hex 32
+   
+   # Set it as a secret
+   npx wrangler secret put JWT_SECRET
+   # Paste the generated secret
+   ```
+
+### Storage Provider Secrets (Choose at least one)
+
+#### Option 1: Google Drive (Recommended)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable Google Drive API
+4. Create OAuth 2.0 credentials
+5. Get access token using OAuth 2.0 Playground or your app
+6. Set secrets:
+   ```bash
+   npx wrangler secret put GDRIVE_ACCESS_TOKEN
+   npx wrangler secret put GDRIVE_FOLDER_ID  # Optional
+   ```
+
+#### Option 2: Dropbox
+
+1. Go to [Dropbox App Console](https://www.dropbox.com/developers/apps)
+2. Create a new app with "Full Dropbox" access
+3. Generate access token
+4. Set secrets:
+   ```bash
+   npx wrangler secret put DROPBOX_ACCESS_TOKEN
+   npx wrangler secret put DROPBOX_PATH  # Optional, e.g., "/NightmareLibrary"
+   ```
+
+#### Option 3: Mega.nz
+
+1. Create or use existing Mega.nz account
+2. Set secrets:
+   ```bash
+   npx wrangler secret put MEGA_EMAIL
+   npx wrangler secret put MEGA_PASSWORD
+   npx wrangler secret put MEGA_FOLDER_ID  # Optional
+   ```
+
+**Note**: Storing passwords as secrets is not ideal. Consider using app-specific passwords if available.
+
+#### Option 4: GitHub (Fallback - 4GB Limit)
+
+1. Go to [GitHub Settings > Developer Settings > Personal Access Tokens](https://github.com/settings/tokens)
+2. Generate new token with `repo` scope
+3. Set secrets:
+   ```bash
+   npx wrangler secret put GITHUB_TOKEN
+   npx wrangler secret put GITHUB_OWNER  # Your GitHub username
+   npx wrangler secret put GITHUB_REPO   # Optional, defaults to "nightmare-library-storage"
+   ```
+
+## Step 6: Test Locally
+
+```bash
+# Start local development server
+npm run dev
+
+# This runs: wrangler pages dev . --compatibility-date=2024-01-01
+```
+
+Visit `http://localhost:8788` to test your application.
+
+## Step 7: Deploy to Cloudflare Pages
+
+### Via Wrangler CLI
+
+```bash
+# Deploy to production
+npm run deploy
+
+# This runs: wrangler pages deploy .
+```
+
+### Via Cloudflare Dashboard
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. Select your account
+3. Go to **Pages**
+4. Click **Create a project**
+5. Connect your Git repository
+6. Configure build settings:
+   - **Build command**: `echo "No build required"`
+   - **Build output directory**: `./`
+7. Add environment variables in **Settings > Environment variables**
+
+## Step 8: Configure Custom Domain (Optional)
+
+1. In Cloudflare Pages dashboard, go to your project
+2. Click **Custom domains**
+3. Add your domain
+4. Update DNS records as instructed
+
+## Security Best Practices
+
+1. **Rotate Secrets Regularly**
+   - Change PASSWORD and JWT_SECRET every 90 days
+   - Rotate storage tokens when suspicious activity detected
+
+2. **Monitor Access Logs**
+   - Check Cloudflare Analytics regularly
+   - Set up alerts for unusual traffic patterns
+
+3. **Use Least-Privilege Access**
+   - Storage tokens should only have necessary permissions
+   - GitHub tokens should be scoped to specific repositories
+
+4. **Enable 2FA**
+   - Enable two-factor authentication on your Cloudflare account
+   - Enable 2FA on storage provider accounts
+
+5. **Backup Database**
+   ```bash
+   # Export D1 database
+   npx wrangler d1 export nightmare-library-db --output backup.sql
+   ```
+
+## Troubleshooting
+
+### Database Migration Fails
+```bash
+# Check database connection
+npx wrangler d1 info nightmare-library-db
+
+# Re-run migrations
+npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql
+```
+
+### KV Namespace Not Found
+```bash
+# List all KV namespaces
+npx wrangler kv:namespace list
+
+# Verify IDs in wrangler.toml match output
+```
+
+### Storage Upload Fails
+- Verify secret values are set correctly
+- Check token permissions in provider console
+- Review Cloudflare Functions logs for error details
+
+### Session Expires Immediately
+- Verify JWT_SECRET is set
+- Check cookie settings (Secure, SameSite)
+- Ensure HTTPS is enabled
+
+## Performance Optimization
+
+1. **Enable Cloudflare Caching**
+   - Static assets cached at edge
+   - Custom cache rules for book covers
+
+2. **Use Workers Analytics**
+   - Monitor response times
+   - Identify slow endpoints
+
+3. **Optimize Images**
+   - Use Cloudflare Images for cover processing
+   - Enable WebP format for smaller sizes
+
+## Monitoring
+
+### View Logs
+```bash
+# Tail Pages Functions logs
+npx wrangler pages deployment tail
+```
+
+### Analytics Dashboard
+- Go to Cloudflare Dashboard > Pages > Your Project > Analytics
+- Monitor requests, bandwidth, errors
+
+## Support
+
+For issues or questions:
+- Check [Cloudflare Pages Docs](https://developers.cloudflare.com/pages/)
+- Review [Cloudflare Workers Docs](https://developers.cloudflare.com/workers/)
+- Open an issue in the repository
