@@ -3,6 +3,8 @@
  * Handles EPUB and PDF rendering with navigation and progress tracking
  */
 
+import { createElement, createElementWithText, batchAppend, clearElement, escapeHtml } from './dom-helpers.js';
+
 // State
 let book = null;
 let rendition = null;
@@ -255,32 +257,46 @@ async function renderPdfPage(pageNum) {
 }
 
 function renderToc(toc) {
+    clearElement(elements.tocList);
+    
     if (!toc || toc.length === 0) {
-        elements.tocList.innerHTML = '<p style="padding: 20px; color: #666;">No table of contents available</p>';
+        const emptyMsg = createElementWithText('p', 'No table of contents available', {
+            style: { padding: '20px', color: '#666' }
+        });
+        elements.tocList.appendChild(emptyMsg);
         return;
     }
 
-    const renderItems = (items, nested = false) => {
-        return items.map(item => `
-            <div class="toc-item ${nested ? 'nested' : ''}" data-href="${item.href}">
-                ${item.label}
-            </div>
-            ${item.subitems ? renderItems(item.subitems, true) : ''}
-        `).join('');
-    };
-
-    elements.tocList.innerHTML = renderItems(toc);
-
-    // Attach click handlers
-    elements.tocList.querySelectorAll('.toc-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const href = item.dataset.href;
-            if (rendition && href) {
-                rendition.display(href);
-                closeToc();
+    const createTocItems = (items, nested = false) => {
+        const fragment = document.createDocumentFragment();
+        
+        items.forEach(item => {
+            const div = createElement('div', {
+                className: `toc-item ${nested ? 'nested' : ''}`,
+                dataset: { href: item.href }
+            });
+            div.textContent = item.label;
+            
+            div.addEventListener('click', () => {
+                if (rendition && item.href) {
+                    rendition.display(item.href);
+                    closeToc();
+                }
+            });
+            
+            fragment.appendChild(div);
+            
+            if (item.subitems && item.subitems.length > 0) {
+                const subitems = createTocItems(item.subitems, true);
+                fragment.appendChild(subitems);
             }
         });
-    });
+        
+        return fragment;
+    };
+
+    const tocFragment = createTocItems(toc);
+    elements.tocList.appendChild(tocFragment);
 }
 
 function applyEpubTheme() {
@@ -346,58 +362,146 @@ function addCustomizationControls() {
     const readerControls = document.querySelector('.reader-controls');
     if (!readerControls || readerControls.querySelector('.customization-menu')) return;
 
-    const customBtn = document.createElement('button');
-    customBtn.className = 'icon-btn';
-    customBtn.innerHTML = '⚙️';
-    customBtn.title = 'Customize Reader';
+    const customBtn = createElementWithText('button', '⚙️', {
+        className: 'icon-btn',
+        title: 'Customize Reader'
+    });
     customBtn.onclick = toggleCustomizationMenu;
-
     readerControls.insertBefore(customBtn, readerControls.querySelector('.theme-selector'));
 
-    const menu = document.createElement('div');
-    menu.className = 'customization-menu';
-    menu.style.cssText = 'display: none; position: absolute; top: 60px; right: 20px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; width: 280px; z-index: 1000;';
-    menu.innerHTML = `
-        <h3 style="margin: 0 0 12px 0; font-size: 14px;">Reader Settings</h3>
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Font Family</label>
-            <select id="font-family-select" style="width: 100%; padding: 6px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
-                <option value="default">Default</option>
-                <option value="serif">Serif</option>
-                <option value="sans-serif">Sans Serif</option>
-                <option value="monospace">Monospace</option>
-            </select>
-        </div>
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Line Height: <span id="line-height-value">${lineHeight}</span></label>
-            <input type="range" id="line-height-slider" min="1.2" max="2.4" step="0.1" value="${lineHeight}" style="width: 100%;">
-        </div>
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Letter Spacing: <span id="letter-spacing-value">${letterSpacing}px</span></label>
-            <input type="range" id="letter-spacing-slider" min="-1" max="3" step="0.5" value="${letterSpacing}" style="width: 100%;">
-        </div>
-        <button onclick="resetReaderSettings()" style="width: 100%; padding: 8px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer;">Reset to Defaults</button>
-    `;
-    document.body.appendChild(menu);
+    const menu = createElement('div', {
+        className: 'customization-menu',
+        style: {
+            display: 'none',
+            position: 'absolute',
+            top: '60px',
+            right: '20px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            padding: '16px',
+            width: '280px',
+            zIndex: '1000'
+        }
+    });
 
-    // Event listeners
-    document.getElementById('font-family-select').value = fontFamily;
-    document.getElementById('font-family-select').addEventListener('change', (e) => {
+    // Title
+    const title = createElementWithText('h3', 'Reader Settings', {
+        style: { margin: '0 0 12px 0', fontSize: '14px' }
+    });
+    menu.appendChild(title);
+
+    // Font Family
+    const fontFamilyGroup = createElement('div', {
+        style: { marginBottom: '12px' }
+    });
+    const fontLabel = createElementWithText('label', 'Font Family', {
+        style: { display: 'block', fontSize: '12px', marginBottom: '4px' }
+    });
+    const fontSelect = createElement('select', {
+        id: 'font-family-select',
+        style: {
+            width: '100%',
+            padding: '6px',
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '4px'
+        }
+    });
+    ['default', 'serif', 'sans-serif', 'monospace'].forEach(font => {
+        const opt = createElementWithText('option', font.charAt(0).toUpperCase() + font.slice(1), {
+            value: font
+        });
+        fontSelect.appendChild(opt);
+    });
+    fontSelect.value = fontFamily;
+    fontSelect.addEventListener('change', (e) => {
         fontFamily = e.target.value;
         applyReaderStyles();
     });
+    fontFamilyGroup.appendChild(fontLabel);
+    fontFamilyGroup.appendChild(fontSelect);
+    menu.appendChild(fontFamilyGroup);
 
-    document.getElementById('line-height-slider').addEventListener('input', (e) => {
+    // Line Height
+    const lineHeightGroup = createElement('div', {
+        style: { marginBottom: '12px' }
+    });
+    const lineHeightLabel = createElement('label', {
+        style: { display: 'block', fontSize: '12px', marginBottom: '4px' }
+    });
+    lineHeightLabel.textContent = 'Line Height: ';
+    const lineHeightValue = createElementWithText('span', lineHeight.toString(), {
+        id: 'line-height-value'
+    });
+    lineHeightLabel.appendChild(lineHeightValue);
+    
+    const lineHeightSlider = createElement('input', {
+        type: 'range',
+        id: 'line-height-slider',
+        min: '1.2',
+        max: '2.4',
+        step: '0.1',
+        value: lineHeight.toString(),
+        style: { width: '100%' }
+    });
+    lineHeightSlider.addEventListener('input', (e) => {
         lineHeight = parseFloat(e.target.value);
-        document.getElementById('line-height-value').textContent = lineHeight;
+        lineHeightValue.textContent = lineHeight.toString();
         applyReaderStyles();
     });
+    lineHeightGroup.appendChild(lineHeightLabel);
+    lineHeightGroup.appendChild(lineHeightSlider);
+    menu.appendChild(lineHeightGroup);
 
-    document.getElementById('letter-spacing-slider').addEventListener('input', (e) => {
+    // Letter Spacing
+    const letterSpacingGroup = createElement('div', {
+        style: { marginBottom: '12px' }
+    });
+    const letterSpacingLabel = createElement('label', {
+        style: { display: 'block', fontSize: '12px', marginBottom: '4px' }
+    });
+    letterSpacingLabel.textContent = 'Letter Spacing: ';
+    const letterSpacingValue = createElementWithText('span', `${letterSpacing}px`, {
+        id: 'letter-spacing-value'
+    });
+    letterSpacingLabel.appendChild(letterSpacingValue);
+    
+    const letterSpacingSlider = createElement('input', {
+        type: 'range',
+        id: 'letter-spacing-slider',
+        min: '-1',
+        max: '3',
+        step: '0.5',
+        value: letterSpacing.toString(),
+        style: { width: '100%' }
+    });
+    letterSpacingSlider.addEventListener('input', (e) => {
         letterSpacing = parseFloat(e.target.value);
-        document.getElementById('letter-spacing-value').textContent = letterSpacing + 'px';
+        letterSpacingValue.textContent = `${letterSpacing}px`;
         applyReaderStyles();
     });
+    letterSpacingGroup.appendChild(letterSpacingLabel);
+    letterSpacingGroup.appendChild(letterSpacingSlider);
+    menu.appendChild(letterSpacingGroup);
+
+    // Reset button
+    const resetBtn = createElementWithText('button', 'Reset to Defaults', {
+        style: {
+            width: '100%',
+            padding: '8px',
+            background: 'var(--accent)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+        }
+    });
+    resetBtn.onclick = resetReaderSettings;
+    menu.appendChild(resetBtn);
+
+    document.body.appendChild(menu);
 }
 
 function toggleCustomizationMenu() {
@@ -510,14 +614,24 @@ function prevSearchResult() {
 }
 
 function showSearchNavigation() {
-    const nav = document.createElement('div');
-    nav.id = 'search-nav';
-    nav.innerHTML = `
-        <button onclick="prevSearchResult()">◀</button>
-        <span>${currentSearchIndex + 1} of ${searchResults.length}</span>
-        <button onclick="nextSearchResult()">▶</button>
-        <button onclick="clearSearch()">✕</button>
-    `;
+    const nav = createElement('div', { id: 'search-nav' });
+    
+    const prevBtn = createElementWithText('button', '◀');
+    prevBtn.onclick = prevSearchResult;
+    
+    const counter = createElementWithText('span', `${currentSearchIndex + 1} of ${searchResults.length}`);
+    
+    const nextBtn = createElementWithText('button', '▶');
+    nextBtn.onclick = nextSearchResult;
+    
+    const closeBtn = createElementWithText('button', '✕');
+    closeBtn.onclick = clearSearch;
+    
+    nav.appendChild(prevBtn);
+    nav.appendChild(counter);
+    nav.appendChild(nextBtn);
+    nav.appendChild(closeBtn);
+    
     document.body.appendChild(nav);
 }
 

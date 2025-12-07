@@ -4,6 +4,8 @@
  * Track reading speed, earn XP, unlock achievements
  */
 
+import { createElement, createElementWithText } from './dom-helpers.js';
+
 class ReadingGamification {
     constructor() {
         this.profile = this.loadProfile();
@@ -87,31 +89,42 @@ class ReadingGamification {
     }
 
     showXPGain(amount, reason) {
-        const notification = document.createElement('div');
-        notification.className = 'xp-notification';
-        notification.innerHTML = `+${amount} XP${reason ? ': ' + reason : ''}`;
+        const notification = createElement('div', {
+            className: 'xp-notification'
+        });
+        
+        const text = reason ? `+${amount} XP: ${reason}` : `+${amount} XP`;
+        notification.textContent = text;
+        
         document.body.appendChild(notification);
 
         setTimeout(() => notification.remove(), 3000);
     }
 
     showLevelUpNotification(level) {
-        const notification = document.createElement('div');
-        notification.className = 'level-up-notification';
-        notification.innerHTML = `🎉 Level ${level}!`;
+        const notification = createElement('div', {
+            className: 'level-up-notification'
+        });
+        notification.textContent = `🎉 Level ${level}!`;
+        
         document.body.appendChild(notification);
 
         setTimeout(() => notification.remove(), 5000);
     }
 
     showAchievementUnlocked(achievement) {
-        const notification = document.createElement('div');
-        notification.className = 'achievement-notification';
-        notification.innerHTML = `
-            <h3>🏆 Achievement Unlocked!</h3>
-            <p>${achievement.name}</p>
-            <small>${achievement.desc}</small>
-        `;
+        const notification = createElement('div', {
+            className: 'achievement-notification'
+        });
+        
+        const title = createElementWithText('h3', '🏆 Achievement Unlocked!');
+        const name = createElementWithText('p', achievement.name);
+        const desc = createElementWithText('small', achievement.desc);
+        
+        notification.appendChild(title);
+        notification.appendChild(name);
+        notification.appendChild(desc);
+        
         document.body.appendChild(notification);
 
         setTimeout(() => notification.remove(), 5000);

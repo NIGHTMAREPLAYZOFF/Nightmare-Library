@@ -1,3 +1,4 @@
+
 name = "nightmare-library"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
@@ -5,67 +6,93 @@ compatibility_flags = ["nodejs_compat"]
 # Pages configuration
 pages_build_output_dir = "./"
 
+# ============================================
 # D1 Database Binding
-# After running: npx wrangler d1 create nightmare-library-db
-# Copy the database_id from the output and paste below
+# ============================================
+# Run: npx wrangler d1 create nightmare-library-db
+# Then copy the database_id from output and paste below
 [[d1_databases]]
 binding = "DB"
 database_name = "nightmare-library-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"  # Replace after running: wrangler d1 create nightmare-library-db
 
+# ============================================
 # KV Namespace Bindings
-# After running: npx wrangler kv:namespace create "KV_SESSIONS"
-# Copy the id from the output and paste below
+# ============================================
+# Run these commands to create KV namespaces:
+# npx wrangler kv:namespace create "KV_SESSIONS"
+# npx wrangler kv:namespace create "KV_CACHE"
+# npx wrangler kv:namespace create "KV_RATE_LIMIT"
+
 [[kv_namespaces]]
 binding = "KV_SESSIONS"
-id = "your-sessions-kv-id"
-preview_id = "your-sessions-preview-kv-id"
+id = "REPLACE_WITH_YOUR_KV_SESSIONS_ID"  # Replace with actual KV namespace ID
+preview_id = "REPLACE_WITH_YOUR_KV_SESSIONS_PREVIEW_ID"
 
-# After running: npx wrangler kv:namespace create "KV_CACHE"
 [[kv_namespaces]]
 binding = "KV_CACHE"
 id = "REPLACE_WITH_YOUR_KV_CACHE_ID"
 preview_id = "REPLACE_WITH_YOUR_KV_CACHE_PREVIEW_ID"
 
-# After running: npx wrangler kv:namespace create "KV_RATE_LIMIT"
 [[kv_namespaces]]
 binding = "KV_RATE_LIMIT"
-id = "your-rate-limit-kv-id"
-preview_id = "your-rate-limit-preview-kv-id"
+id = "REPLACE_WITH_YOUR_KV_RATE_LIMIT_ID"
+preview_id = "REPLACE_WITH_YOUR_KV_RATE_LIMIT_PREVIEW_ID"
 
+# ============================================
 # Environment Variables (non-secret)
+# ============================================
 [vars]
 ENVIRONMENT = "production"
 
 # ============================================
-# SECRETS - Set these in Cloudflare Dashboard
+# SECRETS CONFIGURATION
 # ============================================
-# Go to: Cloudflare Dashboard > Pages > nightmare-library > Settings > Environment variables
-# Or use CLI: npx wrangler secret put SECRET_NAME
+# DO NOT commit secrets to version control!
+# Set these in Cloudflare Dashboard or via Wrangler CLI
+#
+# Cloudflare Dashboard method:
+# 1. Go to: Cloudflare Dashboard > Pages > nightmare-library > Settings > Environment variables
+# 2. Add each secret as an encrypted variable
+#
+# CLI method:
+# npx wrangler secret put SECRET_NAME
 #
 # REQUIRED SECRETS:
 # -----------------
-# PASSWORD          = "YourSecurePassword123!"     (your login password)
-# JWT_SECRET        = "random-64-character-string" (generate with password manager)
+# PASSWORD          - Your login password (min 8 chars, use strong password)
+# JWT_SECRET        - Random 64-character string for session tokens
+#                     Generate with: openssl rand -hex 32
 #
-# STORAGE SECRETS (cascading fallback - configure at least one):
-# ---------------------------------------------------------------
-# Google Drive (Primary):
-# GDRIVE_ACCESS_TOKEN = "your-oauth2-token"
-# GDRIVE_FOLDER_ID    = "folder-id" (optional)
+# STORAGE PROVIDER SECRETS (configure at least one):
+# ---------------------------------------------------
+# The system uses cascading fallback: GDrive → Dropbox → Mega → GitHub
+#
+# Google Drive (Recommended primary):
+# GDRIVE_ACCESS_TOKEN - OAuth2 access token from Google Cloud Console
+# GDRIVE_FOLDER_ID    - (Optional) Specific folder ID to store books
 #
 # Dropbox (Secondary):
-# DROPBOX_ACCESS_TOKEN = "your-access-token"
-# DROPBOX_PATH         = "/NightmareLibrary" (optional)
+# DROPBOX_ACCESS_TOKEN - Access token from Dropbox App Console
+# DROPBOX_PATH         - (Optional) Path like "/NightmareLibrary"
 #
 # Mega.nz (Tertiary):
-# MEGA_EMAIL     = "your-email@example.com"
-# MEGA_PASSWORD  = "your-password"
-# MEGA_FOLDER_ID = "folder-id" (optional)
+# MEGA_EMAIL     - Your Mega.nz account email
+# MEGA_PASSWORD  - Your Mega.nz account password (NOT recommended, use app password if available)
+# MEGA_FOLDER_ID - (Optional) Specific folder ID
 #
-# GitHub (Final Fallback - 4GB max, recommended):
-# GITHUB_TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxx" (Personal Access Token with repo scope)
-# GITHUB_OWNER = "your-github-username"
-# GITHUB_REPO  = "nightmare-library-storage" (optional, defaults to this)
+# GitHub (Final Fallback - 4GB repository limit):
+# GITHUB_TOKEN - Personal Access Token with repo scope
+#                Generate at: https://github.com/settings/tokens
+# GITHUB_OWNER - Your GitHub username
+# GITHUB_REPO  - (Optional) Repository name, defaults to "nightmare-library-storage"
 #
-# See CLOUDFLARE_SETUP.md for step-by-step instructions
+# SECURITY NOTES:
+# ---------------
+# - Never commit actual secret values
+# - Use environment-specific secrets for dev/staging/prod
+# - Rotate secrets periodically
+# - Use least-privilege access for storage tokens
+# - Monitor access logs for suspicious activity
+#
+# For detailed setup instructions, see: CLOUDFLARE_SETUP.md

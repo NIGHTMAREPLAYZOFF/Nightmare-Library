@@ -3,6 +3,8 @@
  * Handles book display, uploads, shelves, and user interactions
  */
 
+import { createElement, createElementWithText, batchAppend, clearElement, replaceChildren, escapeHtml } from './dom-helpers.js';
+
 // State
 let allBooks = [];
 let allShelves = [];
@@ -522,62 +524,139 @@ class VirtualBookshelf {
 
         // Calculate the total height needed for the container to enable scrolling
         const totalHeight = this.books.length * this.itemHeight;
-        this.container.style.height = `${totalHeight}px`; // Set total height for scrollbar
+        this.container.style.height = `${totalHeight}px`;
 
-        // Render only the visible items, positioning them correctly
-        let html = '';
+        // Build cards using safe DOM methods
+        const fragment = document.createDocumentFragment();
+        
         visibleBooks.forEach((book, index) => {
             const bookIndexInAllBooks = startIndex + index;
             const topOffset = bookIndexInAllBooks * this.itemHeight;
-            html += `
-                <div class="book-card" 
-                     data-book-id="${book.id}" 
-                     tabindex="0" 
-                     role="button" 
-                     aria-label="Open ${escapeHtml(book.title)}"
-                     style="position: absolute; top: ${topOffset}px; left: 0; width: 100%; height: ${this.itemHeight}px;">
-                    ${this.createBookCardContent(book)}
-                </div>
-            `;
+            
+            const card = createElement('div', {
+                className: 'book-card',
+                dataset: { bookId: book.id },
+                tabindex: '0',
+                role: 'button',
+                'aria-label': `Open ${book.title || 'book'}`,
+                style: {
+                    position: 'absolute',
+                    top: `${topOffset}px`,
+                    left: '0',
+                    width: '100%',
+                    height: `${this.itemHeight}px`
+                }
+            });
+            
+            const content = this.createBookCardContent(book);
+            card.appendChild(content);
+            fragment.appendChild(card);
         });
-        this.container.innerHTML = html;
 
-        // Attach event listeners using event delegation on the container
+        // Replace all children at once
+        clearElement(this.container);
+        this.container.appendChild(fragment);
+
+        // Attach event listeners using event delegation
         this.attachEventListeners();
     }
 
     createBookCardContent(book) {
-        const tags = (book.tags || '').split(',').filter(t => t.trim());
-        const badgesHtml = tags.slice(0, 2).map(t =>
-            `<span class="badge">${escapeHtml(t.trim())}</span>`
-        ).join('');
+        const inner = createElement('div', {
+            className: 'book-card-inner',
+            style: {
+                height: `${this.itemHeight}px`,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '10px'
+            }
+        });
 
-        return `
-            <div class="book-card-inner" style="height: ${this.itemHeight}px; display: flex; flex-direction: column; justify-content: space-between; padding: 10px;">
-                <div class="book-cover-container">
-                    <img 
-                        class="book-cover" 
-                        src="/api/books/cover/${book.id}" 
-                        alt="${escapeHtml(book.title)} cover"
-                        loading="lazy"
-                        onerror="this.src='/frontend/assets/broken-image.svg'"
-                        style="height: ${this.itemHeight * 0.7}px; object-fit: contain;">
-                </div>
-                <h3 class="book-title" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
-                <p class="book-author">${escapeHtml(book.author || 'Unknown Author')}</p>
-                <div class="badges">${badgesHtml}</div>
-                ${book.progress > 0 ? `
-                    <div class="book-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${book.progress}%"></div>
-                        </div>
-                        <span class="progress-text">${Math.round(book.progress)}%</span>
-                    </div>
-                ` : ''}
-                ${book.is_favorite ? '<span class="favorite-badge" style="position: absolute; top: 8px; right: 8px; font-size: 20px;">⭐</span>' : ''}
-                <button class="card-menu" aria-label="Book options" aria-haspopup="menu" style="position: absolute; top: 5px; right: 5px;">&#8942;</button>
-            </div>
-        `;
+        // Cover container
+        const coverContainer = createElement('div', { className: 'book-cover-container' });
+        const coverImg = createElement('img', {
+            className: 'book-cover',
+            src: `/api/books/cover/${book.id}`,
+            alt: `${book.title || 'Book'} cover`,
+            loading: 'lazy',
+            style: {
+                height: `${this.itemHeight * 0.7}px`,
+                objectFit: 'contain'
+            }
+        });
+        coverImg.onerror = function() { this.src = '/frontend/assets/broken-image.svg'; };
+        coverContainer.appendChild(coverImg);
+        inner.appendChild(coverContainer);
+
+        // Title
+        const title = createElementWithText('h3', book.title || 'Untitled', {
+            className: 'book-title',
+            title: book.title || 'Untitled'
+        });
+        inner.appendChild(title);
+
+        // Author
+        const author = createElementWithText('p', book.author || 'Unknown Author', {
+            className: 'book-author'
+        });
+        inner.appendChild(author);
+
+        // Badges
+        const tags = (book.tags || '').split(',').filter(t => t.trim());
+        const badgesContainer = createElement('div', { className: 'badges' });
+        tags.slice(0, 2).forEach(tag => {
+            const badge = createElementWithText('span', tag.trim(), { className: 'badge' });
+            badgesContainer.appendChild(badge);
+        });
+        inner.appendChild(badgesContainer);
+
+        // Progress bar
+        if (book.progress > 0) {
+            const progressContainer = createElement('div', { className: 'book-progress' });
+            const progressBar = createElement('div', { className: 'progress-bar' });
+            const progressFill = createElement('div', {
+                className: 'progress-fill',
+                style: { width: `${book.progress}%` }
+            });
+            const progressText = createElementWithText('span', `${Math.round(book.progress)}%`, {
+                className: 'progress-text'
+            });
+            
+            progressBar.appendChild(progressFill);
+            progressContainer.appendChild(progressBar);
+            progressContainer.appendChild(progressText);
+            inner.appendChild(progressContainer);
+        }
+
+        // Favorite badge
+        if (book.is_favorite) {
+            const favBadge = createElementWithText('span', '⭐', {
+                className: 'favorite-badge',
+                style: {
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    fontSize: '20px'
+                }
+            });
+            inner.appendChild(favBadge);
+        }
+
+        // Menu button
+        const menuBtn = createElementWithText('button', '⋮', {
+            className: 'card-menu',
+            'aria-label': 'Book options',
+            'aria-haspopup': 'menu',
+            style: {
+                position: 'absolute',
+                top: '5px',
+                right: '5px'
+            }
+        });
+        inner.appendChild(menuBtn);
+
+        return inner;
     }
 
     attachEventListeners() {
@@ -638,32 +717,56 @@ function renderBooks(books, containerId) {
         if (!container) return;
 
         if (books.length === 0) {
-            container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">No books yet. Upload your first book!</p>';
+            clearElement(container);
+            const emptyMsg = createElementWithText('p', 'No books yet. Upload your first book!', {
+                style: {
+                    color: 'var(--text-muted)',
+                    textAlign: 'center',
+                    padding: '40px'
+                }
+            });
+            container.appendChild(emptyMsg);
             return;
         }
 
-        // Use the same card creation logic as the virtual shelf for consistency
+        // Build cards safely
+        const fragment = document.createDocumentFragment();
         const virtualShelfInstance = getVirtualShelfInstance();
-        container.innerHTML = books.map(book => virtualShelfInstance.createBookCardContent(book)).join(''); // Use content method
-
-        // Add click handlers
-        container.querySelectorAll('.book-card').forEach(card => {
+        
+        books.forEach(book => {
+            const card = createElement('div', {
+                className: 'book-card',
+                dataset: { bookId: book.id },
+                tabindex: '0',
+                role: 'button'
+            });
+            
+            const content = virtualShelfInstance.createBookCardContent(book);
+            card.appendChild(content);
+            
+            // Add click handler
             card.addEventListener('click', (e) => {
                 const menuButton = card.querySelector('.card-menu');
                 if (menuButton && menuButton.contains(e.target)) {
-                     e.stopPropagation(); // Prevent opening book if menu is clicked
-                     showContextMenu(e, card.dataset.bookId);
+                    e.stopPropagation();
+                    showContextMenu(e, card.dataset.bookId);
                 } else {
-                    openBook(card.dataset.bookId)
-                };
+                    openBook(card.dataset.bookId);
+                }
             });
+            
             card.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     openBook(card.dataset.bookId);
                 }
             });
+            
+            fragment.appendChild(card);
         });
+
+        clearElement(container);
+        container.appendChild(fragment);
     }
 }
 
@@ -684,24 +787,37 @@ function renderRecentlyRead() {
 }
 
 function renderShelves() {
-    elements.shelvesList.innerHTML = allShelves.map(shelf => `
-        <li class="sidebar-item ${currentView === 'shelf:' + shelf.id ? 'active' : ''}"
-            data-view="shelf:${shelf.id}">
-            <span class="shelf-color" style="background: ${shelf.color || '#bb86fc'}"></span>
-            <span>${escapeHtml(shelf.name)}</span>
-        </li>
-    `).join('');
-
-    // Attach event listeners
-    elements.shelvesList.querySelectorAll('.sidebar-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const view = item.dataset.view;
-            setActiveView(view);
-            elements.libraryTitle.textContent = item.querySelector('span:last-child').textContent;
-            renderBooks([], 'all-books-grid'); // Render books for the virtual shelf
+    const fragment = document.createDocumentFragment();
+    
+    allShelves.forEach(shelf => {
+        const isActive = currentView === `shelf:${shelf.id}`;
+        const li = createElement('li', {
+            className: `sidebar-item ${isActive ? 'active' : ''}`,
+            dataset: { view: `shelf:${shelf.id}` }
         });
+        
+        const colorSpan = createElement('span', {
+            className: 'shelf-color',
+            style: { background: shelf.color || '#bb86fc' }
+        });
+        
+        const nameSpan = createElementWithText('span', shelf.name);
+        
+        li.appendChild(colorSpan);
+        li.appendChild(nameSpan);
+        
+        li.addEventListener('click', () => {
+            const view = li.dataset.view;
+            setActiveView(view);
+            elements.libraryTitle.textContent = shelf.name;
+            renderBooks([], 'all-books-grid');
+        });
+        
+        fragment.appendChild(li);
     });
 
+    clearElement(elements.shelvesList);
+    elements.shelvesList.appendChild(fragment);
     updateStats();
 }
 
@@ -716,23 +832,36 @@ function renderTags() {
         }
     });
 
-    elements.tagsList.innerHTML = Array.from(allTags).slice(0, 8).map(tag => `
-        <li class="sidebar-item ${currentView === 'tag:' + tag ? 'active' : ''}"
-            data-view="tag:${tag}">
-            <span class="sidebar-item-icon">&#127991;</span>
-            <span>${escapeHtml(tag)}</span>
-        </li>
-    `).join('');
-
-    // Attach event listeners
-    elements.tagsList.querySelectorAll('.sidebar-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const view = item.dataset.view;
-            setActiveView(view);
-            elements.libraryTitle.textContent = item.querySelector('span:last-child').textContent;
-            renderBooks([], 'all-books-grid'); // Render books for the virtual shelf
+    const fragment = document.createDocumentFragment();
+    
+    Array.from(allTags).slice(0, 8).forEach(tag => {
+        const isActive = currentView === `tag:${tag}`;
+        const li = createElement('li', {
+            className: `sidebar-item ${isActive ? 'active' : ''}`,
+            dataset: { view: `tag:${tag}` }
         });
+        
+        const icon = createElementWithText('span', '🏷️', {
+            className: 'sidebar-item-icon'
+        });
+        
+        const tagText = createElementWithText('span', tag);
+        
+        li.appendChild(icon);
+        li.appendChild(tagText);
+        
+        li.addEventListener('click', () => {
+            const view = li.dataset.view;
+            setActiveView(view);
+            elements.libraryTitle.textContent = tag;
+            renderBooks([], 'all-books-grid');
+        });
+        
+        fragment.appendChild(li);
     });
+
+    clearElement(elements.tagsList);
+    elements.tagsList.appendChild(fragment);
 }
 
 function updateStats() {
@@ -1070,20 +1199,42 @@ async function handleShelfSubmit() {
 // Add to Shelf Modal
 function openAddToShelfModal(bookId) {
     document.getElementById('add-to-shelf-book-id').value = bookId;
+    
+    const shelfOptionsContainer = document.getElementById('shelf-options');
+    clearElement(shelfOptionsContainer);
 
-    const options = allShelves.map(shelf => `
-        <div class="sidebar-item" data-shelf-id="${shelf.id}" style="cursor: pointer;">
-            <span class="shelf-color" style="background: ${shelf.color || '#bb86fc'}"></span>
-            <span>${escapeHtml(shelf.name)}</span>
-        </div>
-    `).join('');
-
-    document.getElementById('shelf-options').innerHTML = options || '<p style="color: var(--text-muted);">No shelves created yet</p>';
-
-    // Attach click handlers
-    document.querySelectorAll('#shelf-options .sidebar-item').forEach(item => {
-        item.addEventListener('click', () => addBookToShelf(bookId, item.dataset.shelfId));
-    });
+    if (allShelves.length === 0) {
+        const emptyMsg = createElementWithText('p', 'No shelves created yet', {
+            style: { color: 'var(--text-muted)' }
+        });
+        shelfOptionsContainer.appendChild(emptyMsg);
+    } else {
+        const fragment = document.createDocumentFragment();
+        
+        allShelves.forEach(shelf => {
+            const item = createElement('div', {
+                className: 'sidebar-item',
+                dataset: { shelfId: shelf.id },
+                style: { cursor: 'pointer' }
+            });
+            
+            const colorSpan = createElement('span', {
+                className: 'shelf-color',
+                style: { background: shelf.color || '#bb86fc' }
+            });
+            
+            const nameSpan = createElementWithText('span', shelf.name);
+            
+            item.appendChild(colorSpan);
+            item.appendChild(nameSpan);
+            
+            item.addEventListener('click', () => addBookToShelf(bookId, shelf.id));
+            
+            fragment.appendChild(item);
+        });
+        
+        shelfOptionsContainer.appendChild(fragment);
+    }
 
     document.getElementById('add-to-shelf-modal').classList.add('visible');
 }
@@ -1137,12 +1288,25 @@ function showUndoNotification(actionType) {
         edit: 'Book edited'
     };
 
-    const toast = document.createElement('div');
-    toast.className = 'toast info';
-    toast.innerHTML = `
-        <span>${messages[actionType] || 'Action completed'}</span>
-        <button onclick="undoLastAction()" style="margin-left: 12px; padding: 4px 8px; background: var(--accent-primary); border: none; border-radius: 4px; cursor: pointer;">Undo</button>
-    `;
+    const toast = createElement('div', {
+        className: 'toast info'
+    });
+    
+    const messageSpan = createElementWithText('span', messages[actionType] || 'Action completed');
+    toast.appendChild(messageSpan);
+    
+    const undoBtn = createElementWithText('button', 'Undo', {
+        style: {
+            marginLeft: '12px',
+            padding: '4px 8px',
+            background: 'var(--accent-primary)',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+        }
+    });
+    undoBtn.onclick = undoLastAction;
+    toast.appendChild(undoBtn);
 
     elements.toastContainer.appendChild(toast);
 
@@ -1302,9 +1466,12 @@ function handleKeyboard(e) {
 
 // Toast Notifications
 function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+    const toast = createElement('div', {
+        className: `toast ${type}`
+    });
+    
+    const messageSpan = createElementWithText('span', message);
+    toast.appendChild(messageSpan);
 
     elements.toastContainer.appendChild(toast);
 
