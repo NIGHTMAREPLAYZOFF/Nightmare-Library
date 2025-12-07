@@ -1135,7 +1135,7 @@ body {
     border-radius: 8px;
     font-weight: 600;
     box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-    animation: slideInRight 0.3s ease;
+    animation: slideInRight 0.3s ease, bounce 0.5s ease 0.3s;
     z-index: 1000;
 }
 
@@ -1151,8 +1151,18 @@ body {
     font-size: 32px;
     font-weight: bold;
     box-shadow: 0 8px 32px rgba(187, 134, 252, 0.5);
-    animation: pulse 0.5s ease;
+    animation: pulse 0.5s ease, glow 1.5s ease infinite;
     z-index: 1001;
+}
+
+.level-up-notification::before {
+    content: '✨';
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 48px;
+    animation: sparkle 1s ease infinite;
 }
 
 .achievement-notification {
@@ -1165,7 +1175,7 @@ body {
     padding: 20px;
     width: 300px;
     box-shadow: 0 8px 24px rgba(255, 167, 38, 0.3);
-    animation: slideInUp 0.4s ease;
+    animation: achievementPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     z-index: 1000;
 }
 
@@ -1173,6 +1183,39 @@ body {
     margin: 0 0 8px 0;
     color: #ffa726;
     font-size: 16px;
+    animation: shake 0.5s ease 0.6s;
+}
+
+/* Streak indicator */
+.streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #ff6b6b, #ff8787);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    animation: glow 2s ease infinite;
+}
+
+/* Reading progress indicator */
+.reading-progress-indicator {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card);
+    border: 2px solid var(--accent);
+    border-radius: 24px;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    animation: slideInUp 0.3s ease;
+    z-index: 999;
 }
 
 .achievement-notification p {
