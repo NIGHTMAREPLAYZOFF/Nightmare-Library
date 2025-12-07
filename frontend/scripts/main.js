@@ -742,7 +742,7 @@ function renderBooks(books, containerId) {
             return;
         }
 
-        // Build cards safely
+        // Build cards safely using createElement and appendChild
         const fragment = document.createDocumentFragment();
         const virtualShelfInstance = getVirtualShelfInstance();
         
@@ -751,7 +751,8 @@ function renderBooks(books, containerId) {
                 className: 'book-card',
                 dataset: { bookId: book.id },
                 tabindex: '0',
-                role: 'button'
+                role: 'button',
+                'aria-label': `Open ${book.title || 'book'}`
             });
             
             const content = virtualShelfInstance.createBookCardContent(book);
