@@ -1,0 +1,27 @@
+
+{
+  "name": "Nightmare Library",
+  "short_name": "Nightmare",
+  "description": "Private digital library for EPUB and PDF books",
+  "start_url": "/frontend/dashboard.html",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#bb86fc",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/frontend/assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["books", "education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Upload Book",
+      "short_name": "Upload",
+      "url": "/frontend/dashboard.html?action=upload"
+    }
+  ]
+}
