@@ -1,5 +1,71 @@
 /**
  * HTML Snippet Generators
+ * Backend MUST return pre-rendered HTML to frontend
+ */
+
+export function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+export function generateBookCardSnippet(book: any): string {
+  const title = escapeHtml(book.title || 'Untitled');
+  const author = escapeHtml(book.author || 'Unknown Author');
+  const progress = book.progress || 0;
+  const tags = (book.tags || '').split(',').filter((t: string) => t.trim());
+
+  return `<article class="book-card" data-id="${escapeHtml(book.id)}" role="listitem" tabindex="0">
+    <div class="book-cover-container">
+      <img 
+        class="book-cover" 
+        src="/api/books/cover/${escapeHtml(book.id)}" 
+        alt="${title} cover"
+        loading="lazy"
+        onerror="this.src='/frontend/assets/broken-image.svg'"
+      >
+      <svg class="progress-ring" viewBox="0 0 36 36">
+        <circle class="progress-ring-bg" cx="18" cy="18" r="16"/>
+        <circle class="progress-ring-fill" cx="18" cy="18" r="16" 
+                stroke-dasharray="${progress}, 100"/>
+        <text x="18" y="20" class="progress-text">${Math.round(progress)}%</text>
+      </svg>
+    </div>
+    <h3 class="book-title" title="${title}">${title}</h3>
+    <p class="book-author">${author}</p>
+    <div class="badges">
+      ${tags.slice(0, 2).map((tag: string) => `<span class="badge">${escapeHtml(tag.trim())}</span>`).join('')}
+    </div>
+    <button class="card-menu" aria-label="Book options" aria-haspopup="menu">⋯</button>
+  </article>`;
+}
+
+export function generateShelfItemSnippet(shelf: any): string {
+  const name = escapeHtml(shelf.name);
+  const color = escapeHtml(shelf.color || '#bb86fc');
+
+  return `<li class="sidebar-item" data-view="shelf:${escapeHtml(shelf.id)}">
+    <span class="shelf-color" style="background: ${color};"></span>
+    <span>${name}</span>
+  </li>`;
+}
+
+export function generateTagItemSnippet(tag: string): string {
+  const escapedTag = escapeHtml(tag);
+
+  return `<li class="sidebar-item" data-view="tag:${escapedTag}">
+    <span class="sidebar-item-icon">🏷️</span>
+    <span>${escapedTag}</span>
+  </li>`;
+}
+
+/**
+ * HTML Snippet Generators
  * Backend-rendered HTML components for the frontend
  */
 
