@@ -85,6 +85,7 @@ async function extractMetadataFromFile(fileData: ArrayBuffer, fileType: string) 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
 
+  // This outer try block now handles all errors in the function body below
   try {
     // Rate limiting: 10 uploads per minute
     const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -104,7 +105,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
     }
 
-    try {
+    // --- START: Main upload logic (formerly inside the unnecessary inner 'try') ---
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const title = formData.get('title') as string;
@@ -272,8 +273,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }), {
       headers: { 'Content-Type': 'application/json' }
     });
+    // --- END: Main upload logic ---
 
-  } catch (error) {
+
+  } catch (error) { // The single, unified catch block
     console.error('Upload error:', error);
     return new Response(JSON.stringify({
       success: false,
