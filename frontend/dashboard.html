@@ -318,11 +318,23 @@
     <!-- Scripts -->
     <script type="module" src="/frontend/scripts/dom-helpers.js"></script>
     <script type="module" src="/frontend/scripts/fuzzy-search.js"></script>
+    <script src="/frontend/scripts/sanitizer.js"></script>
+    <script src="/frontend/scripts/cover-generator.js"></script>
+    <script src="/frontend/scripts/performance-monitor.js"></script>
+    <script src="/frontend/scripts/indexed-db.js"></script>
     <script src="/frontend/scripts/theme.js"></script>
     <script src="/frontend/scripts/search.js"></script>
     <script src="/frontend/scripts/analytics.js"></script>
     <script src="/frontend/scripts/ai-features.js"></script>
     <script type="module" src="/frontend/scripts/reading-gamification.js"></script>
     <script type="module" src="/frontend/scripts/main.js"></script>
+    <script>
+        // Register service worker for offline support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/frontend/scripts/service-worker.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.error('Service Worker registration failed:', err));
+        }
+    </script>
 </body>
 </html>
