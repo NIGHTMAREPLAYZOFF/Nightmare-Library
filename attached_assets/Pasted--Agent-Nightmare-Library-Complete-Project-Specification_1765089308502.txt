@@ -1,0 +1,1044 @@
+
+Agent
+Nightmare Library - Complete Project Specification
+CRITICAL DEPLOYMENT NOTICE
+This project MUST follow Cloudflare Pages deployment rules. DO NOT use Replit-specific configurations, workflows, or conventions. The project will be deployed via GitHub to Cloudflare Pages. Using Replit rules will break the deployment.
+
+Project Overview
+Build a private, self-hosted digital library called "Nightmare Library" for Cloudflare Pages deployment via GitHub. This is a single-user application for managing and reading EPUB and PDF books with an obsidian-black themed interface.
+
+Architecture
+Polyglot Stack
+Performance Layer (C/C++ and Rust → WebAssembly)
+
+C/C++ compiled to WASM using Emscripten
+Rust compiled to WASM using wasm-pack
+Used for CPU-intensive operations:
+EPUB metadata extraction (title, author, cover, page count)
+PDF metadata extraction and parsing
+Image processing for cover thumbnails
+Fast fuzzy string matching for search
+WASM modules loaded and executed in Cloudflare Pages Functions
+Backend Layer (Cloudflare Pages Functions)
+
+JavaScript or TypeScript files in /functions directory
+Runs on Cloudflare Workers runtime (V8 engine)
+Handles ALL business logic
+MUST provide pre-rendered HTML snippets to frontend
+Manages authentication, storage, database operations
+Frontend Layer (Pure Vanilla)
+
+HTML, CSS, and vanilla JavaScript ONLY
+Located in /frontend directory
+NO frameworks (React, Vue, Angular, Svelte)
+NO bundlers (Webpack, Vite, Parcel)
+NO TypeScript in frontend (only backend)
+NO business logic - only renders what backend provides
+Receives pre-rendered HTML snippets from backend and inserts them
+Pages Structure
+ONLY 2 PAGES + READER VIEW
+Login Page - index.html (at project root)
+
+Simple password input form
+Posts to /functions/auth.js
+On success, redirects to dashboard
+Dashboard Page - /frontend/dashboard.html
+
+Main library view with all features
+Protected by authentication middleware
+Contains: header, sidebar, book grid, modals
+All UI components rendered from backend snippets
+Reader View - /frontend/reader.html
+
+Separate view for reading books (not a "page" in navigation sense)
+Renders EPUB using epub.js, PDF using pdf.js
+Accessed by clicking a book, not from sidebar navigation
+Backend Provides UI to Frontend
+The backend MUST return pre-rendered HTML snippets that the frontend inserts directly. This is MANDATORY, not optional.
+
+Example API Response with HTML Snippet
+{
+  "success": true,
+  "books": [
+    {
+      "id": "book-abc123",
+      "title": "My Book Title",
+      "author": "Author Name",
+      "snippet_html": "<article class=\"book-card\" data-id=\"book-abc123\"><div class=\"book-cover-container\"><img class=\"book-cover\" src=\"/api/cover/book-abc123\" alt=\"My Book Title cover\" loading=\"lazy\" onerror=\"this.src='/frontend/assets/broken-image.svg'\"><div class=\"progress-ring\"><svg>...</svg></div></div><h3 class=\"book-title\" title=\"My Book Title\">My Book Title</h3><p class=\"book-author\">Author Name</p><div class=\"badges\"><span class=\"badge\">Light Novel</span></div><button class=\"card-menu\" aria-label=\"Book menu\">⋯</button></article>"
+    }
+  ]
+}
+Frontend Usage
+const response = await fetch('/api/books/list');
+const data = await response.json();
+const grid = document.querySelector('.books-grid');
+grid.innerHTML = data.books.map(book => book.snippet_html).join('');
+All HTML snippets MUST be properly escaped to prevent XSS attacks.
+
+Complete File Structure
+nightmare-library/
+│
+├── index.html                      # LOGIN PAGE (root)
+├── README.md                       # Project documentation
+├── package.json                    # npm dependencies
+├── wrangler.toml                   # Cloudflare config with ALL bindings
+├── tsconfig.json                   # TypeScript config (backend only)
+├── .gitignore                      # Git ignore rules
+│
+├── migrations/
+│   └── 0001_init.sql               # Database schema (run manually)
+│
+├── frontend/                       # HTML, CSS, JS ONLY
+│   ├── dashboard.html              # MAIN DASHBOARD PAGE
+│   ├── reader.html                 # Reader view
+│   │
+│   ├── styles/
+│   │   ├── main.css                # Global styles
+│   │   └── reader.css              # Reader styles
+│   │
+│   ├── scripts/
+│   │   ├── main.js                 # Dashboard logic (renders backend HTML)
+│   │   ├── reader.js               # Reader controls
+│   │   └── search.js               # Client-side fuzzy search
+│   │
+│   └── assets/
+│       ├── favicon.svg             # Site favicon
+│       └── broken-image.svg        # Fallback cover image
+│
+├── functions/                      # BACKEND - ALL LOGIC HERE
+│   ├── auth.ts                     # Authentication handler
+│   ├── middleware.ts               # Session validation
+│   ├── storage-proxy.ts            # Storage provider abstraction
+│   ├── html-snippets.ts            # HTML snippet generators
+│   ├── _middleware.ts              # Cloudflare Pages middleware
+│   │
+│   └── api/
+│       ├── books/
+│       │   ├── list.ts             # GET - returns books with HTML snippets
+│       │   ├── get.ts              # GET - single book details
+│       │   ├── upload.ts           # POST - upload new book
+│       │   ├── update.ts           # PUT - update metadata
+│       │   ├── delete.ts           # DELETE - remove book
+│       │   └── progress.ts         # GET/POST - reading progress
+│       │
+│       ├── shelves/
+│       │   ├── list.ts             # GET - all shelves with HTML snippets
+│       │   ├── create.ts           # POST - new shelf
+│       │   ├── update.ts           # PUT - rename shelf
+│       │   ├── delete.ts           # DELETE - remove shelf
+│       │   ├── add-book.ts         # POST - add book to shelf
+│       │   └── remove-book.ts      # DELETE - remove book from shelf
+│       │
+│       ├── tags/
+│       │   └── list.ts             # GET - all tags
+│       │
+│       ├── search.ts               # GET - server-side search
+│       │
+│       └── settings/
+│           ├── get.ts              # GET - user settings
+│           ├── update.ts           # PUT - update settings
+│           └── export.ts           # GET - export library data
+│
+└── wasm/                           # Rust WASM modules
+    ├── Cargo.toml                  # Rust config
+    └── src/
+        ├── lib.rs                  # Main entry
+        ├── epub.rs                 # EPUB parsing
+        ├── pdf.rs                  # PDF parsing
+        └── image.rs                # Cover processing
+wrangler.toml - ALL BINDINGS INCLUDED
+The AI MUST create this file with all bindings. Replace placeholder IDs after creating resources.
+
+name = "nightmare-library"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+# Pages configuration
+pages_build_output_dir = "./"
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "nightmare-library-db"
+database_id = "YOUR_D1_DATABASE_ID_HERE"
+# KV Namespace Bindings
+[[kv_namespaces]]
+binding = "KV_SESSIONS"
+id = "YOUR_KV_SESSIONS_ID_HERE"
+[[kv_namespaces]]
+binding = "KV_CACHE"
+id = "YOUR_KV_CACHE_ID_HERE"
+# Environment Variables (non-secret)
+[vars]
+ENVIRONMENT = "production"
+# Secrets are set via CLI or dashboard, not in this file
+# See CLOUDFLARE_SETUP.md for all required secrets
+CLOUDFLARE_SETUP.md - AI MUST CREATE THIS FILE
+The AI building this project MUST create a file called CLOUDFLARE_SETUP.md with the following content:
+
+Required Content for CLOUDFLARE_SETUP.md:
+# Cloudflare Setup Instructions
+## 1. Create D1 Database
+Run this command to create the D1 database:
+\`\`\`bash
+npx wrangler d1 create nightmare-library-db
+\`\`\`
+Copy the `database_id` from the output and paste it into `wrangler.toml` under `[[d1_databases]]`.
+## 2. Create KV Namespaces
+Run these commands to create KV namespaces:
+\`\`\`bash
+npx wrangler kv:namespace create "KV_SESSIONS"
+npx wrangler kv:namespace create "KV_CACHE"
+\`\`\`
+Copy each `id` from the output and paste into `wrangler.toml` under the corresponding `[[kv_namespaces]]`.
+## 3. Run Database Migrations
+After creating D1, run the SQL schema:
+\`\`\`bash
+npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql
+\`\`\`
+## 4. Set All Required Secrets
+### SECRET: PASSWORD
+- **Purpose**: Master password for login authentication
+- **Required Data**: A strong password string (min 12 characters recommended)
+- **Command**: `npx wrangler secret put PASSWORD`
+### SECRET: JWT_SECRET
+- **Purpose**: Signs authentication tokens
+- **Required Data**: Random 64+ character string (use a password generator)
+- **Command**: `npx wrangler secret put JWT_SECRET`
+### SECRET: STORAGE_PROVIDER_1_TYPE
+- **Purpose**: Type of primary storage provider
+- **Required Data**: One of: `r2`, `s3`, `gcs`, `backblaze`
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_TYPE`
+### SECRET: STORAGE_PROVIDER_1_BUCKET
+- **Purpose**: Bucket name for primary storage
+- **Required Data**: Your bucket name (e.g., `nightmare-library-books`)
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_BUCKET`
+### SECRET: STORAGE_PROVIDER_1_ACCESS_KEY
+- **Purpose**: Access key/ID for storage provider
+- **Required Data**: 
+  - For R2: R2 Access Key ID from Cloudflare dashboard
+  - For S3: AWS Access Key ID
+  - For GCS: Service account client email
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_ACCESS_KEY`
+### SECRET: STORAGE_PROVIDER_1_SECRET_KEY
+- **Purpose**: Secret key for storage provider
+- **Required Data**:
+  - For R2: R2 Secret Access Key from Cloudflare dashboard
+  - For S3: AWS Secret Access Key
+  - For GCS: Service account private key (JSON string)
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_SECRET_KEY`
+### SECRET: STORAGE_PROVIDER_1_ENDPOINT (Optional for S3/R2)
+- **Purpose**: Custom endpoint URL
+- **Required Data**: 
+  - For R2: `https://<account_id>.r2.cloudflarestorage.com`
+  - For S3: Leave empty or custom endpoint
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_ENDPOINT`
+### SECRET: STORAGE_PROVIDER_1_REGION (Optional)
+- **Purpose**: Storage region
+- **Required Data**: Region code (e.g., `us-east-1`, `auto` for R2)
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_REGION`
+## 5. Connect GitHub to Cloudflare Pages
+1. Go to Cloudflare Dashboard → Pages
+2. Click "Create a project" → "Connect to Git"
+3. Authorize GitHub and select your repository
+4. Configure build settings:
+   - Project name: `nightmare-library`
+   - Production branch: `main`
+   - Build command: `npm run build` (or leave empty if no build)
+   - Build output directory: `/`
+5. Go to Settings → Functions → Add bindings for D1 and KV
+6. Go to Settings → Environment Variables → Add all secrets
+7. Deploy!
+## Summary of All Secrets
+| Secret Name | Required Data |
+|-------------|---------------|
+| PASSWORD | Master login password |
+| JWT_SECRET | Random 64+ char string for token signing |
+| STORAGE_PROVIDER_1_TYPE | `r2`, `s3`, `gcs`, or `backblaze` |
+| STORAGE_PROVIDER_1_BUCKET | Bucket name |
+| STORAGE_PROVIDER_1_ACCESS_KEY | Provider access key/ID |
+| STORAGE_PROVIDER_1_SECRET_KEY | Provider secret key |
+| STORAGE_PROVIDER_1_ENDPOINT | (Optional) Custom endpoint URL |
+| STORAGE_PROVIDER_1_REGION | (Optional) Region code |
+Database Schema (D1)
+migrations/0001_init.sql
+-- Books table
+CREATE TABLE IF NOT EXISTS books (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    author TEXT,
+    storage_provider TEXT NOT NULL,
+    storage_id TEXT NOT NULL,
+    cover_url TEXT,
+    file_type TEXT NOT NULL,
+    file_size INTEGER,
+    tags TEXT,
+    total_pages INTEGER,
+    uploaded_at INTEGER NOT NULL,
+    last_read_at INTEGER,
+    last_read_position INTEGER DEFAULT 0
+);
+-- Shelves table
+CREATE TABLE IF NOT EXISTS shelves (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    color TEXT DEFAULT '#bb86fc',
+    position INTEGER DEFAULT 0,
+    created_at INTEGER NOT NULL
+);
+-- Shelf items (many-to-many relationship)
+CREATE TABLE IF NOT EXISTS shelf_items (
+    shelf_id TEXT NOT NULL,
+    book_id TEXT NOT NULL,
+    added_at INTEGER NOT NULL,
+    PRIMARY KEY (shelf_id, book_id),
+    FOREIGN KEY (shelf_id) REFERENCES shelves(id) ON DELETE CASCADE,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+);
+-- Reading progress
+CREATE TABLE IF NOT EXISTS progress (
+    book_id TEXT PRIMARY KEY,
+    percent INTEGER NOT NULL DEFAULT 0,
+    current_page INTEGER,
+    current_chapter TEXT,
+    last_read_at INTEGER NOT NULL,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+);
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_books_uploaded ON books(uploaded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_books_last_read ON books(last_read_at DESC);
+CREATE INDEX IF NOT EXISTS idx_progress_last_read ON progress(last_read_at DESC);
+Authentication System
+Flow
+User visits / (index.html) - login page
+User enters password, form POSTs to /functions/auth
+Backend validates password against PASSWORD secret
+If valid:
+Generate JWT token signed with JWT_SECRET
+Store session in KV_SESSIONS with 24-hour TTL
+Set cookie: NMLR_SESSION={token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400
+Return redirect to /frontend/dashboard.html
+If invalid: Return error message
+Middleware Protection
+The _middleware.ts file MUST:
+
+Check for NMLR_SESSION cookie on all requests to /frontend/* and /api/*
+Validate token against KV_SESSIONS
+Redirect to / if invalid or missing
+Allow access to / (login page) without auth
+Cookie Requirements
+HttpOnly - JavaScript cannot access
+Secure - HTTPS only
+SameSite=Strict - Prevents CSRF
+Path=/ - Available on all routes
+Max-Age=86400 - 24 hours
+UI Theme - Obsidian Black
+Color Palette
+:root {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #111111;
+    --bg-card: #1a1a1a;
+    --bg-hover: #252525;
+    
+    --border-color: #2a2a2a;
+    --border-hover: #3a3a3a;
+    
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666666;
+    
+    --accent: #bb86fc;
+    --accent-hover: #9d6ae0;
+    --accent-gradient: linear-gradient(135deg, #bb86fc, #7c4dff);
+    
+    --success: #4caf50;
+    --danger: #ef5350;
+    --warning: #ffa726;
+    
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+Reader Themes
+.theme-obsidian { --reader-bg: #0a0a0a; --reader-text: #e0e0e0; }
+.theme-sepia { --reader-bg: #f4ecd8; --reader-text: #5c4b37; }
+.theme-light { --reader-bg: #ffffff; --reader-text: #212121; }
+Dashboard Layout
+┌──────────────────────────────────────────────────────────────────┐
+│ HEADER                                                            │
+│ [☰]     [══════════ Search ══════════]     [Theme] [Settings]    │
+├──────────────┬───────────────────────────────────────────────────┤
+│   SIDEBAR    │  MAIN CONTENT                                      │
+│              │                                                    │
+│  📚 All Books│  Recently Read                                     │
+│  📂 Shelves  │  ┌────┐ ┌────┐ ┌────┐                             │
+│    ├ Fantasy │  │Book│ │Book│ │Book│  →                          │
+│    ├ Sci-Fi  │  └────┘ └────┘ └────┘                             │
+│    └ + New   │                                                    │
+│  🏷️ Tags     │  Library                                          │
+│  ⬆️ Upload   │  ┌────┐ ┌────┐ ┌────┐ ┌────┐                      │
+│              │  │Book│ │Book│ │Book│ │Book│                      │
+│ ──────────── │  │Card│ │Card│ │Card│ │Card│                      │
+│  📊 12 Books │  └────┘ └────┘ └────┘ └────┘                      │
+│  📂 3 Shelves│                                                    │
+│              │  ┌────┐ ┌────┐ ┌────┐ ┌─ ─ ─┐                     │
+│  [Collapse]  │  │Book│ │Book│ │Book│ │  +  │ ← Upload tile       │
+│              │  │Card│ │Card│ │Card│ │Upload│   (≤5 books)       │
+└──────────────┴──└────┘─└────┘─└────┘─└─ ─ ─┘─────────────────────┘
+                                                         [+] FAB
+                                                    (>5 books, pulsing)
+Book Card HTML (Exact Structure)
+Backend MUST generate this exact HTML structure:
+
+<article class="book-card" data-id="BOOK_ID" role="listitem" tabindex="0">
+    <div class="book-cover-container">
+        <img 
+            class="book-cover" 
+            src="/api/cover/BOOK_ID" 
+            alt="BOOK_TITLE cover"
+            loading="lazy"
+            onerror="this.src='/frontend/assets/broken-image.svg'"
+        >
+        <svg class="progress-ring" viewBox="0 0 36 36">
+            <circle class="progress-ring-bg" cx="18" cy="18" r="16"/>
+            <circle class="progress-ring-fill" cx="18" cy="18" r="16" 
+                    stroke-dasharray="PERCENT, 100"/>
+            <text x="18" y="20" class="progress-text">PERCENT%</text>
+        </svg>
+    </div>
+    <h3 class="book-title" title="FULL_TITLE">DISPLAY_TITLE</h3>
+    <p class="book-author">AUTHOR_NAME</p>
+    <div class="badges">
+        <span class="badge">TAG_1</span>
+        <span class="badge">TAG_2</span>
+    </div>
+    <button class="card-menu" aria-label="Book options" aria-haspopup="menu">
+        ⋯
+    </button>
+</article>
+Responsive Grid
+.books-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(4, 1fr);
+}
+@media (max-width: 1200px) { .books-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 900px) { .books-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .books-grid { grid-template-columns: 1fr; } }
+Upload Behavior
+≤5 books in library: Show inline upload tile as last grid item
+>5 books in library: Show pulsating FAB in bottom-right corner
+Book Card Menu
+┌────────────────────┐
+│ 📖 Open            │
+│ 📂 Add to Shelf    │
+│ ✏️ Edit Metadata   │
+│ ─────────────────  │
+│ 🗑️ Delete          │  (red text)
+└────────────────────┘
+Cascade Delete
+When deleting a book:
+
+Delete file from storage provider (via storage-proxy)
+Delete from shelf_items table (all shelves)
+Delete from progress table
+Delete from books table
+Clear from KV_CACHE
+Return success
+Reader Features
+Controls
+Previous/Next navigation (buttons + keyboard)
+Font size adjustment (A-, A+)
+Theme selector (Obsidian, Sepia, Light)
+Fullscreen toggle
+Progress ring with percentage
+Keyboard Shortcuts
+Key	Action
+J	Previous page/chapter
+K	Next page/chapter
+L	Back to library
+U	Upload modal
+F	Fullscreen
+Esc	Close modal/exit fullscreen
+Progress Auto-Save
+Save every 30 seconds while reading
+Save on page change
+Save on leaving reader
+Default Tags
+Light Novel
+Manga
+Novel
+Story
+Fantasy
+Sci-Fi
+Romance
+Horror
+Custom tags stored as comma-separated in books.tags column.
+
+Search
+Client-Side (Primary)
+Fuzzy search across title, author, tags
+Real-time results as typing (debounced 200ms)
+Works for libraries up to ~500 books
+Server-Side (Fallback)
+POST to /api/search for large libraries
+D1 SQL LIKE queries
+Accessibility
+ARIA roles on all interactive elements
+Keyboard navigation support
+Focus indicators
+Sufficient color contrast (4.5:1 minimum)
+Screen reader compatible
+Performance
+Lazy loading images with loading="lazy"
+IntersectionObserver for deferred loading
+Skeleton loaders during fetch
+KV caching # Nightmare Library - Complete Project Specification
+CRITICAL DEPLOYMENT NOTICE
+This project MUST follow Cloudflare Pages deployment rules. DO NOT use Replit-specific configurations, workflows, or conventions. The project will be deployed via GitHub to Cloudflare Pages. Using Replit rules will break the deployment.
+
+Project Overview
+Build a private, self-hosted digital library called "Nightmare Library" for Cloudflare Pages deployment via GitHub. This is a single-user application for managing and reading EPUB and PDF books with an obsidian-black themed interface.
+
+Architecture
+Polyglot Stack
+Performance Layer (C/C++ and Rust → WebAssembly)
+
+C/C++ compiled to WASM using Emscripten
+Rust compiled to WASM using wasm-pack
+Used for CPU-intensive operations:
+EPUB metadata extraction (title, author, cover, page count)
+PDF metadata extraction and parsing
+Image processing for cover thumbnails
+Fast fuzzy string matching for search
+WASM modules loaded and executed in Cloudflare Pages Functions
+Backend Layer (Cloudflare Pages Functions)
+
+JavaScript or TypeScript files in /functions directory
+Runs on Cloudflare Workers runtime (V8 engine)
+Handles ALL business logic
+MUST provide pre-rendered HTML snippets to frontend
+Manages authentication, storage, database operations
+Frontend Layer (Pure Vanilla)
+
+HTML, CSS, and vanilla JavaScript ONLY
+Located in /frontend directory
+NO frameworks (React, Vue, Angular, Svelte)
+NO bundlers (Webpack, Vite, Parcel)
+NO TypeScript in frontend (only backend)
+NO business logic - only renders what backend provides
+Receives pre-rendered HTML snippets from backend and inserts them
+Pages Structure
+ONLY 2 PAGES + READER VIEW
+Login Page - index.html (at project root)
+
+Simple password input form
+Posts to /functions/auth.js
+On success, redirects to dashboard
+Dashboard Page - /frontend/dashboard.html
+
+Main library view with all features
+Protected by authentication middleware
+Contains: header, sidebar, book grid, modals
+All UI components rendered from backend snippets
+Reader View - /frontend/reader.html
+
+Separate view for reading books (not a "page" in navigation sense)
+Renders EPUB using epub.js, PDF using pdf.js
+Accessed by clicking a book, not from sidebar navigation
+Backend Provides UI to Frontend
+The backend MUST return pre-rendered HTML snippets that the frontend inserts directly. This is MANDATORY, not optional.
+
+Example API Response with HTML Snippet
+{
+  "success": true,
+  "books": [
+    {
+      "id": "book-abc123",
+      "title": "My Book Title",
+      "author": "Author Name",
+      "snippet_html": "<article class=\"book-card\" data-id=\"book-abc123\"><div class=\"book-cover-container\"><img class=\"book-cover\" src=\"/api/cover/book-abc123\" alt=\"My Book Title cover\" loading=\"lazy\" onerror=\"this.src='/frontend/assets/broken-image.svg'\"><div class=\"progress-ring\"><svg>...</svg></div></div><h3 class=\"book-title\" title=\"My Book Title\">My Book Title</h3><p class=\"book-author\">Author Name</p><div class=\"badges\"><span class=\"badge\">Light Novel</span></div><button class=\"card-menu\" aria-label=\"Book menu\">⋯</button></article>"
+    }
+  ]
+}
+Frontend Usage
+const response = await fetch('/api/books/list');
+const data = await response.json();
+const grid = document.querySelector('.books-grid');
+grid.innerHTML = data.books.map(book => book.snippet_html).join('');
+All HTML snippets MUST be properly escaped to prevent XSS attacks.
+
+Complete File Structure
+nightmare-library/
+│
+├── index.html                      # LOGIN PAGE (root)
+├── README.md                       # Project documentation
+├── package.json                    # npm dependencies
+├── wrangler.toml                   # Cloudflare config with ALL bindings
+├── tsconfig.json                   # TypeScript config (backend only)
+├── .gitignore                      # Git ignore rules
+│
+├── migrations/
+│   └── 0001_init.sql               # Database schema (run manually)
+│
+├── frontend/                       # HTML, CSS, JS ONLY
+│   ├── dashboard.html              # MAIN DASHBOARD PAGE
+│   ├── reader.html                 # Reader view
+│   │
+│   ├── styles/
+│   │   ├── main.css                # Global styles
+│   │   └── reader.css              # Reader styles
+│   │
+│   ├── scripts/
+│   │   ├── main.js                 # Dashboard logic (renders backend HTML)
+│   │   ├── reader.js               # Reader controls
+│   │   └── search.js               # Client-side fuzzy search
+│   │
+│   └── assets/
+│       ├── favicon.svg             # Site favicon
+│       └── broken-image.svg        # Fallback cover image
+│
+├── functions/                      # BACKEND - ALL LOGIC HERE
+│   ├── auth.ts                     # Authentication handler
+│   ├── middleware.ts               # Session validation
+│   ├── storage-proxy.ts            # Storage provider abstraction
+│   ├── html-snippets.ts            # HTML snippet generators
+│   ├── _middleware.ts              # Cloudflare Pages middleware
+│   │
+│   └── api/
+│       ├── books/
+│       │   ├── list.ts             # GET - returns books with HTML snippets
+│       │   ├── get.ts              # GET - single book details
+│       │   ├── upload.ts           # POST - upload new book
+│       │   ├── update.ts           # PUT - update metadata
+│       │   ├── delete.ts           # DELETE - remove book
+│       │   └── progress.ts         # GET/POST - reading progress
+│       │
+│       ├── shelves/
+│       │   ├── list.ts             # GET - all shelves with HTML snippets
+│       │   ├── create.ts           # POST - new shelf
+│       │   ├── update.ts           # PUT - rename shelf
+│       │   ├── delete.ts           # DELETE - remove shelf
+│       │   ├── add-book.ts         # POST - add book to shelf
+│       │   └── remove-book.ts      # DELETE - remove book from shelf
+│       │
+│       ├── tags/
+│       │   └── list.ts             # GET - all tags
+│       │
+│       ├── search.ts               # GET - server-side search
+│       │
+│       └── settings/
+│           ├── get.ts              # GET - user settings
+│           ├── update.ts           # PUT - update settings
+│           └── export.ts           # GET - export library data
+│
+└── wasm/                           # Rust WASM modules
+    ├── Cargo.toml                  # Rust config
+    └── src/
+        ├── lib.rs                  # Main entry
+        ├── epub.rs                 # EPUB parsing
+        ├── pdf.rs                  # PDF parsing
+        └── image.rs                # Cover processing
+wrangler.toml - ALL BINDINGS INCLUDED
+The AI MUST create this file with all bindings. Replace placeholder IDs after creating resources.
+
+name = "nightmare-library"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+# Pages configuration
+pages_build_output_dir = "./"
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "nightmare-library-db"
+database_id = "YOUR_D1_DATABASE_ID_HERE"
+# KV Namespace Bindings
+[[kv_namespaces]]
+binding = "KV_SESSIONS"
+id = "YOUR_KV_SESSIONS_ID_HERE"
+[[kv_namespaces]]
+binding = "KV_CACHE"
+id = "YOUR_KV_CACHE_ID_HERE"
+# Environment Variables (non-secret)
+[vars]
+ENVIRONMENT = "production"
+# Secrets are set via CLI or dashboard, not in this file
+# See CLOUDFLARE_SETUP.md for all required secrets
+CLOUDFLARE_SETUP.md - AI MUST CREATE THIS FILE
+The AI building this project MUST create a file called CLOUDFLARE_SETUP.md with the following content:
+
+Required Content for CLOUDFLARE_SETUP.md:
+# Cloudflare Setup Instructions
+## 1. Create D1 Database
+Run this command to create the D1 database:
+\`\`\`bash
+npx wrangler d1 create nightmare-library-db
+\`\`\`
+Copy the `database_id` from the output and paste it into `wrangler.toml` under `[[d1_databases]]`.
+## 2. Create KV Namespaces
+Run these commands to create KV namespaces:
+\`\`\`bash
+npx wrangler kv:namespace create "KV_SESSIONS"
+npx wrangler kv:namespace create "KV_CACHE"
+\`\`\`
+Copy each `id` from the output and paste into `wrangler.toml` under the corresponding `[[kv_namespaces]]`.
+## 3. Run Database Migrations
+After creating D1, run the SQL schema:
+\`\`\`bash
+npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql
+\`\`\`
+## 4. Set All Required Secrets
+### SECRET: PASSWORD
+- **Purpose**: Master password for login authentication
+- **Required Data**: A strong password string (min 12 characters recommended)
+- **Command**: `npx wrangler secret put PASSWORD`
+### SECRET: JWT_SECRET
+- **Purpose**: Signs authentication tokens
+- **Required Data**: Random 64+ character string (use a password generator)
+- **Command**: `npx wrangler secret put JWT_SECRET`
+### SECRET: STORAGE_PROVIDER_1_TYPE
+- **Purpose**: Type of primary storage provider
+- **Required Data**: One of: `r2`, `s3`, `gcs`, `backblaze`
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_TYPE`
+### SECRET: STORAGE_PROVIDER_1_BUCKET
+- **Purpose**: Bucket name for primary storage
+- **Required Data**: Your bucket name (e.g., `nightmare-library-books`)
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_BUCKET`
+### SECRET: STORAGE_PROVIDER_1_ACCESS_KEY
+- **Purpose**: Access key/ID for storage provider
+- **Required Data**: 
+  - For R2: R2 Access Key ID from Cloudflare dashboard
+  - For S3: AWS Access Key ID
+  - For GCS: Service account client email
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_ACCESS_KEY`
+### SECRET: STORAGE_PROVIDER_1_SECRET_KEY
+- **Purpose**: Secret key for storage provider
+- **Required Data**:
+  - For R2: R2 Secret Access Key from Cloudflare dashboard
+  - For S3: AWS Secret Access Key
+  - For GCS: Service account private key (JSON string)
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_SECRET_KEY`
+### SECRET: STORAGE_PROVIDER_1_ENDPOINT (Optional for S3/R2)
+- **Purpose**: Custom endpoint URL
+- **Required Data**: 
+  - For R2: `https://<account_id>.r2.cloudflarestorage.com`
+  - For S3: Leave empty or custom endpoint
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_ENDPOINT`
+### SECRET: STORAGE_PROVIDER_1_REGION (Optional)
+- **Purpose**: Storage region
+- **Required Data**: Region code (e.g., `us-east-1`, `auto` for R2)
+- **Command**: `npx wrangler secret put STORAGE_PROVIDER_1_REGION`
+## 5. Connect GitHub to Cloudflare Pages
+1. Go to Cloudflare Dashboard → Pages
+2. Click "Create a project" → "Connect to Git"
+3. Authorize GitHub and select your repository
+4. Configure build settings:
+   - Project name: `nightmare-library`
+   - Production branch: `main`
+   - Build command: `npm run build` (or leave empty if no build)
+   - Build output directory: `/`
+5. Go to Settings → Functions → Add bindings for D1 and KV
+6. Go to Settings → Environment Variables → Add all secrets
+7. Deploy!
+## Summary of All Secrets
+| Secret Name | Required Data |
+|-------------|---------------|
+| PASSWORD | Master login password |
+| JWT_SECRET | Random 64+ char string for token signing |
+| STORAGE_PROVIDER_1_TYPE | `r2`, `s3`, `gcs`, or `backblaze` |
+| STORAGE_PROVIDER_1_BUCKET | Bucket name |
+| STORAGE_PROVIDER_1_ACCESS_KEY | Provider access key/ID |
+| STORAGE_PROVIDER_1_SECRET_KEY | Provider secret key |
+| STORAGE_PROVIDER_1_ENDPOINT | (Optional) Custom endpoint URL |
+| STORAGE_PROVIDER_1_REGION | (Optional) Region code |
+Database Schema (D1)
+migrations/0001_init.sql
+-- Books table
+CREATE TABLE IF NOT EXISTS books (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    author TEXT,
+    storage_provider TEXT NOT NULL,
+    storage_id TEXT NOT NULL,
+    cover_url TEXT,
+    file_type TEXT NOT NULL,
+    file_size INTEGER,
+    tags TEXT,
+    total_pages INTEGER,
+    uploaded_at INTEGER NOT NULL,
+    last_read_at INTEGER,
+    last_read_position INTEGER DEFAULT 0
+);
+-- Shelves table
+CREATE TABLE IF NOT EXISTS shelves (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    color TEXT DEFAULT '#bb86fc',
+    position INTEGER DEFAULT 0,
+    created_at INTEGER NOT NULL
+);
+-- Shelf items (many-to-many relationship)
+CREATE TABLE IF NOT EXISTS shelf_items (
+    shelf_id TEXT NOT NULL,
+    book_id TEXT NOT NULL,
+    added_at INTEGER NOT NULL,
+    PRIMARY KEY (shelf_id, book_id),
+    FOREIGN KEY (shelf_id) REFERENCES shelves(id) ON DELETE CASCADE,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+);
+-- Reading progress
+CREATE TABLE IF NOT EXISTS progress (
+    book_id TEXT PRIMARY KEY,
+    percent INTEGER NOT NULL DEFAULT 0,
+    current_page INTEGER,
+    current_chapter TEXT,
+    last_read_at INTEGER NOT NULL,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+);
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_books_uploaded ON books(uploaded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_books_last_read ON books(last_read_at DESC);
+CREATE INDEX IF NOT EXISTS idx_progress_last_read ON progress(last_read_at DESC);
+Authentication System
+Flow
+User visits / (index.html) - login page
+User enters password, form POSTs to /functions/auth
+Backend validates password against PASSWORD secret
+If valid:
+Generate JWT token signed with JWT_SECRET
+Store session in KV_SESSIONS with 24-hour TTL
+Set cookie: NMLR_SESSION={token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400
+Return redirect to /frontend/dashboard.html
+If invalid: Return error message
+Middleware Protection
+The _middleware.ts file MUST:
+
+Check for NMLR_SESSION cookie on all requests to /frontend/* and /api/*
+Validate token against KV_SESSIONS
+Redirect to / if invalid or missing
+Allow access to / (login page) without auth
+Cookie Requirements
+HttpOnly - JavaScript cannot access
+Secure - HTTPS only
+SameSite=Strict - Prevents CSRF
+Path=/ - Available on all routes
+Max-Age=86400 - 24 hours
+UI Theme - Obsidian Black
+Color Palette
+:root {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #111111;
+    --bg-card: #1a1a1a;
+    --bg-hover: #252525;
+    
+    --border-color: #2a2a2a;
+    --border-hover: #3a3a3a;
+    
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666666;
+    
+    --accent: #bb86fc;
+    --accent-hover: #9d6ae0;
+    --accent-gradient: linear-gradient(135deg, #bb86fc, #7c4dff);
+    
+    --success: #4caf50;
+    --danger: #ef5350;
+    --warning: #ffa726;
+    
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+Reader Themes
+.theme-obsidian { --reader-bg: #0a0a0a; --reader-text: #e0e0e0; }
+.theme-sepia { --reader-bg: #f4ecd8; --reader-text: #5c4b37; }
+.theme-light { --reader-bg: #ffffff; --reader-text: #212121; }
+Dashboard Layout
+┌──────────────────────────────────────────────────────────────────┐
+│ HEADER                                                            │
+│ [☰]     [══════════ Search ══════════]     [Theme] [Settings]    │
+├──────────────┬───────────────────────────────────────────────────┤
+│   SIDEBAR    │  MAIN CONTENT                                      │
+│              │                                                    │
+│  📚 All Books│  Recently Read                                     │
+│  📂 Shelves  │  ┌────┐ ┌────┐ ┌────┐                             │
+│    ├ Fantasy │  │Book│ │Book│ │Book│  →                          │
+│    ├ Sci-Fi  │  └────┘ └────┘ └────┘                             │
+│    └ + New   │                                                    │
+│  🏷️ Tags     │  Library                                          │
+│  ⬆️ Upload   │  ┌────┐ ┌────┐ ┌────┐ ┌────┐                      │
+│              │  │Book│ │Book│ │Book│ │Book│                      │
+│ ──────────── │  │Card│ │Card│ │Card│ │Card│                      │
+│  📊 12 Books │  └────┘ └────┘ └────┘ └────┘                      │
+│  📂 3 Shelves│                                                    │
+│              │  ┌────┐ ┌────┐ ┌────┐ ┌─ ─ ─┐                     │
+│  [Collapse]  │  │Book│ │Book│ │Book│ │  +  │ ← Upload tile       │
+│              │  │Card│ │Card│ │Card│ │Upload│   (≤5 books)       │
+└──────────────┴──└────┘─└────┘─└────┘─└─ ─ ─┘─────────────────────┘
+                                                         [+] FAB
+                                                    (>5 books, pulsing)
+Book Card HTML (Exact Structure)
+Backend MUST generate this exact HTML structure:
+
+<article class="book-card" data-id="BOOK_ID" role="listitem" tabindex="0">
+    <div class="book-cover-container">
+        <img 
+            class="book-cover" 
+            src="/api/cover/BOOK_ID" 
+            alt="BOOK_TITLE cover"
+            loading="lazy"
+            onerror="this.src='/frontend/assets/broken-image.svg'"
+        >
+        <svg class="progress-ring" viewBox="0 0 36 36">
+            <circle class="progress-ring-bg" cx="18" cy="18" r="16"/>
+            <circle class="progress-ring-fill" cx="18" cy="18" r="16" 
+                    stroke-dasharray="PERCENT, 100"/>
+            <text x="18" y="20" class="progress-text">PERCENT%</text>
+        </svg>
+    </div>
+    <h3 class="book-title" title="FULL_TITLE">DISPLAY_TITLE</h3>
+    <p class="book-author">AUTHOR_NAME</p>
+    <div class="badges">
+        <span class="badge">TAG_1</span>
+        <span class="badge">TAG_2</span>
+    </div>
+    <button class="card-menu" aria-label="Book options" aria-haspopup="menu">
+        ⋯
+    </button>
+</article>
+Responsive Grid
+.books-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(4, 1fr);
+}
+@media (max-width: 1200px) { .books-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 900px) { .books-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .books-grid { grid-template-columns: 1fr; } }
+Upload Behavior
+≤5 books in library: Show inline upload tile as last grid item
+>5 books in library: Show pulsating FAB in bottom-right corner
+Book Card Menu
+┌────────────────────┐
+│ 📖 Open            │
+│ 📂 Add to Shelf    │
+│ ✏️ Edit Metadata   │
+│ ─────────────────  │
+│ 🗑️ Delete          │  (red text)
+└────────────────────┘
+Cascade Delete
+When deleting a book:
+
+Delete file from storage provider (via storage-proxy)
+Delete from shelf_items table (all shelves)
+Delete from progress table
+Delete from books table
+Clear from KV_CACHE
+Return success
+Reader Features
+Controls
+Previous/Next navigation (buttons + keyboard)
+Font size adjustment (A-, A+)
+Theme selector (Obsidian, Sepia, Light)
+Fullscreen toggle
+Progress ring with percentage
+Keyboard Shortcuts
+Key	Action
+J	Previous page/chapter
+K	Next page/chapter
+L	Back to library
+U	Upload modal
+F	Fullscreen
+Esc	Close modal/exit fullscreen
+Progress Auto-Save
+Save every 30 seconds while reading
+Save on page change
+Save on leaving reader
+Default Tags
+Light Novel
+Manga
+Novel
+Story
+Fantasy
+Sci-Fi
+Romance
+Horror
+Custom tags stored as comma-separated in books.tags column.
+
+Search
+Client-Side (Primary)
+Fuzzy search across title, author, tags
+Real-time results as typing (debounced 200ms)
+Works for libraries up to ~500 books
+Server-Side (Fallback)
+POST to /api/search for large libraries
+D1 SQL LIKE queries
+Accessibility
+ARIA roles on all interactive elements
+Keyboard navigation support
+Focus indicators
+Sufficient color contrast (4.5:1 minimum)
+Screen reader compatible
+Performance
+Lazy loading images with loading="lazy"
+IntersectionObserver for deferred loading
+Skeleton loaders during fetch
+KV caching for metadata
+WASM for heavy processing
+Security Requirements
+HttpOnly, Secure, SameSite cookies
+No storage credentials exposed to frontend
+All file access through storage-proxy with signed URLs
+Input sanitization on all endpoints
+Rate limiting on login (5/minute) and upload (10/hour)
+XSS prevention in HTML snippets
+WASM Modules (C/C++ and Rust)
+Rust Module (Primary)
+// wasm/src/lib.rs
+use wasm_bindgen::prelude::*;
+#[wasm_bindgen]
+pub fn extract_epub_metadata(data: &[u8]) -> JsValue {
+    // Parse EPUB, extract title, author, cover
+}
+#[wasm_bindgen]
+pub fn extract_pdf_metadata(data: &[u8]) -> JsValue {
+    // Parse PDF metadata
+}
+#[wasm_bindgen]
+pub fn process_cover(data: &[u8], max_width: u32) -> Vec<u8> {
+    // Resize cover image
+}
+#[wasm_bindgen]
+pub fn fuzzy_search(query: &str, items: &JsValue) -> JsValue {
+    // Fast fuzzy matching
+}
+Build Commands
+# Rust WASM
+cd wasm && wasm-pack build --target web
+# C/C++ WASM (if using)
+emcc src/parser.c -o parser.wasm -s WASM=1
+AI Instructions Checklist
+When building this project, the AI MUST:
+
+✅ Create wrangler.toml with ALL KV and D1 bindings (placeholders for IDs)
+✅ Create CLOUDFLARE_SETUP.md with:
+Commands to create D1 database
+Commands to create KV namespaces
+All secret names with descriptions of required data
+✅ Use /frontend for HTML, CSS, JS files ONLY
+✅ Use /functions for ALL backend logic
+✅ Backend returns snippet_html field with pre-rendered HTML
+✅ Frontend only inserts HTML from backend, no business logic
+✅ Only 2 pages: login at root, dashboard in frontend folder
+✅ Reader is separate view, not a navigation page
+✅ Follow Cloudflare Pages structure, NOT Replit conventions
+✅ Include C/C++ and Rust WASM for performance operations
+Summary
+Nightmare Library is a private digital library with:
+
+2 pages (login + dashboard) + reader view
+Backend provides all UI as HTML snippets
+Frontend only renders what backend sends
+C/C++ and Rust compiled to WASM for performance
+Cloudflare Pages deployment via GitHub
+D1 database + KV caching
+Multi-provider storage abstraction
+Obsidian-black theme with purple accents
+Full EPUB/PDF reading support
+Progress tracking, shelves, tags, search
+[Note: For kV namespaces i must actually manually make them for D1 databases I have to manually make the database and use the command bar and type the sqlite commands to make tables. Also you can choose the framework and make a suitable build command]
