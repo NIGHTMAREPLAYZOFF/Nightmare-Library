@@ -14,7 +14,7 @@ pages_build_output_dir = "./"
 [[d1_databases]]
 binding = "DB"
 database_name = "nightmare-library-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"  # Replace after running: wrangler d1 create nightmare-library-db
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 
 # ============================================
 # KV Namespace Bindings
@@ -26,7 +26,7 @@ database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"  # Replace after running: wrang
 
 [[kv_namespaces]]
 binding = "KV_SESSIONS"
-id = "REPLACE_WITH_YOUR_KV_SESSIONS_ID"  # Replace with actual KV namespace ID
+id = "REPLACE_WITH_YOUR_KV_SESSIONS_ID"
 preview_id = "REPLACE_WITH_YOUR_KV_SESSIONS_PREVIEW_ID"
 
 [[kv_namespaces]]
@@ -46,53 +46,84 @@ preview_id = "REPLACE_WITH_YOUR_KV_RATE_LIMIT_PREVIEW_ID"
 ENVIRONMENT = "production"
 
 # ============================================
-# SECRETS CONFIGURATION
+# SECRETS CONFIGURATION (10 Storage Providers)
 # ============================================
 # DO NOT commit secrets to version control!
-# Set these in Cloudflare Dashboard or via Wrangler CLI
+# Set in Cloudflare Dashboard: Pages > nightmare-library > Settings > Environment variables
 #
-# Cloudflare Dashboard method:
-# 1. Go to: Cloudflare Dashboard > Pages > nightmare-library > Settings > Environment variables
-# 2. Add each secret as an encrypted variable
-#
-# CLI method:
-# npx wrangler secret put SECRET_NAME
+# CLI method: npx wrangler secret put SECRET_NAME
 #
 # REQUIRED SECRETS:
 # -----------------
-# PASSWORD          - Your login password (min 8 chars, use strong password)
-# JWT_SECRET        - Random 64-character string for session tokens
-#                     Generate with: openssl rand -hex 32
+# PASSWORD          - Your login password (min 8 chars)
+# JWT_SECRET        - Random 64-char string (openssl rand -hex 32)
 #
-# STORAGE PROVIDER SECRETS (configure at least one):
-# ---------------------------------------------------
-# The system uses cascading fallback: GDrive → Dropbox → Mega → GitHub
+# ============================================
+# STORAGE PROVIDERS (Cascading Fallback Order)
+# ============================================
+# The system tries providers in this order until one succeeds.
+# Configure at least ONE provider. GitHub is recommended as fallback.
 #
-# Google Drive (Recommended primary):
+# 1. GOOGLE DRIVE (15GB free)
+# ---------------------------
 # GDRIVE_ACCESS_TOKEN - OAuth2 access token from Google Cloud Console
-# GDRIVE_FOLDER_ID    - (Optional) Specific folder ID to store books
+# GDRIVE_FOLDER_ID    - (Optional) Specific folder ID
 #
-# Dropbox (Secondary):
+# 2. DROPBOX (2GB free, can earn more)
+# ------------------------------------
 # DROPBOX_ACCESS_TOKEN - Access token from Dropbox App Console
 # DROPBOX_PATH         - (Optional) Path like "/NightmareLibrary"
 #
-# Mega.nz (Tertiary):
-# MEGA_EMAIL     - Your Mega.nz account email
-# MEGA_PASSWORD  - Your Mega.nz account password (NOT recommended, use app password if available)
-# MEGA_FOLDER_ID - (Optional) Specific folder ID
+# 3. ONEDRIVE (5GB free)
+# ----------------------
+# ONEDRIVE_ACCESS_TOKEN - OAuth2 token from Microsoft Graph
+# ONEDRIVE_FOLDER_ID    - (Optional) Folder ID for storage
 #
-# GitHub (Final Fallback - 4GB repository limit):
+# 4. PCLOUD (10GB free)
+# ---------------------
+# PCLOUD_ACCESS_TOKEN - Access token from pCloud OAuth
+# PCLOUD_FOLDER_ID    - (Optional) Folder ID, default is root
+#
+# 5. BOX (10GB free)
+# ------------------
+# BOX_ACCESS_TOKEN - Access token from Box Developer Console
+# BOX_FOLDER_ID    - (Optional) Folder ID for books
+#
+# 6. YANDEX DISK (10GB free)
+# --------------------------
+# YANDEX_ACCESS_TOKEN - OAuth token from Yandex OAuth
+# YANDEX_PATH         - (Optional) Path like "NightmareLibrary"
+#
+# 7. KOOFR (10GB free)
+# --------------------
+# KOOFR_ACCESS_TOKEN - OAuth2 token from Koofr
+# KOOFR_MOUNT_ID     - (Optional) Mount ID, default "primary"
+# KOOFR_PATH         - (Optional) Path for storage
+#
+# 8. BACKBLAZE B2 (10GB free)
+# ---------------------------
+# B2_KEY_ID         - Application Key ID from B2 Console
+# B2_APPLICATION_KEY - Application Key
+# B2_BUCKET_ID      - Bucket ID to store files
+# B2_BUCKET_NAME    - Bucket name for download URLs
+#
+# 9. MEGA.NZ (20GB free, ONE account only)
+# ----------------------------------------
+# MEGA_EMAIL     - Your Mega.nz email
+# MEGA_PASSWORD  - Your Mega.nz password
+# MEGA_FOLDER_ID - (Optional) Folder ID
+#
+# 10. GITHUB (4GB repository limit - FINAL FALLBACK)
+# --------------------------------------------------
 # GITHUB_TOKEN - Personal Access Token with repo scope
-#                Generate at: https://github.com/settings/tokens
 # GITHUB_OWNER - Your GitHub username
-# GITHUB_REPO  - (Optional) Repository name, defaults to "nightmare-library-storage"
+# GITHUB_REPO  - (Optional) defaults to "nightmare-library-storage"
 #
 # SECURITY NOTES:
 # ---------------
 # - Never commit actual secret values
-# - Use environment-specific secrets for dev/staging/prod
 # - Rotate secrets periodically
-# - Use least-privilege access for storage tokens
+# - Use least-privilege access tokens
 # - Monitor access logs for suspicious activity
 #
 # For detailed setup instructions, see: CLOUDFLARE_SETUP.md

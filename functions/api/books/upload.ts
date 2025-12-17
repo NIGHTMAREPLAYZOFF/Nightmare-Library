@@ -9,15 +9,31 @@ import { generateBookCardHtml } from '../../html-snippets';
 interface Env {
   DB: D1Database;
   KV_CACHE: KVNamespace;
+  // Storage providers (10 total with cascading fallback)
   GDRIVE_ACCESS_TOKEN?: string;
   GDRIVE_FOLDER_ID?: string;
   DROPBOX_ACCESS_TOKEN?: string;
   DROPBOX_PATH?: string;
+  ONEDRIVE_ACCESS_TOKEN?: string;
+  ONEDRIVE_FOLDER_ID?: string;
+  PCLOUD_ACCESS_TOKEN?: string;
+  PCLOUD_FOLDER_ID?: string;
+  BOX_ACCESS_TOKEN?: string;
+  BOX_FOLDER_ID?: string;
+  YANDEX_ACCESS_TOKEN?: string;
+  YANDEX_PATH?: string;
+  KOOFR_ACCESS_TOKEN?: string;
+  KOOFR_MOUNT_ID?: string;
+  KOOFR_PATH?: string;
+  B2_KEY_ID?: string;
+  B2_APPLICATION_KEY?: string;
+  B2_BUCKET_ID?: string;
+  B2_BUCKET_NAME?: string;
   MEGA_EMAIL?: string;
   MEGA_PASSWORD?: string;
   MEGA_FOLDER_ID?: string;
-  GITHUB_TOKEN: string;
-  GITHUB_OWNER: string;
+  GITHUB_TOKEN?: string;
+  GITHUB_OWNER?: string;
   GITHUB_REPO?: string;
 }
 
@@ -26,7 +42,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file') as unknown as File | null;
     const title = formData.get('title') as string;
     const author = formData.get('author') as string || null;
     const tags = formData.get('tags') as string || null;

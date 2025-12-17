@@ -1,128 +1,206 @@
-
 /**
  * AI-Powered Features for Nightmare Library
- * Genre auto-tagging, reading recommendations, and smart insights
+ * Backend-only AI with user-initiated genre selection
+ * Auto-genre REMOVED per requirements - genres are user-initiated only
  */
 
 class AIFeatures {
     constructor() {
-        this.genreKeywords = {
-            'fantasy': ['magic', 'dragon', 'wizard', 'fantasy', 'quest', 'realm', 'sorcerer'],
-            'scifi': ['space', 'alien', 'future', 'robot', 'galaxy', 'cyberpunk', 'dystopia'],
-            'mystery': ['detective', 'murder', 'crime', 'investigation', 'thriller', 'suspect'],
-            'romance': ['love', 'heart', 'passion', 'romance', 'relationship', 'kiss'],
-            'horror': ['horror', 'terror', 'haunted', 'ghost', 'nightmare', 'dark'],
-            'biography': ['life', 'autobiography', 'memoir', 'biography', 'story of'],
-            'history': ['history', 'historical', 'war', 'ancient', 'century'],
-            'business': ['business', 'entrepreneur', 'startup', 'marketing', 'leadership'],
-            'selfhelp': ['self-help', 'motivation', 'success', 'habit', 'mindset']
-        };
+        this.analyticsCache = null;
+        this.analyticsCacheTime = 0;
+        this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
     }
 
     /**
-     * Auto-tag book genres based on title, author, and existing tags
+     * Get genre suggestions for a book (user-initiated)
+     * @param {string} bookId - Book ID to get suggestions for
+     * @returns {Promise<Array>} Genre suggestions with confidence scores
      */
-    autoTagGenre(book) {
-        const text = `${book.title} ${book.author || ''} ${book.tags || ''}`.toLowerCase();
-        const detectedGenres = [];
+    async getGenreSuggestions(bookId) {
+        try {
+            const response = await fetch('/api/ai/genre', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookId })
+            });
 
-        for (const [genre, keywords] of Object.entries(this.genreKeywords)) {
-            for (const keyword of keywords) {
-                if (text.includes(keyword)) {
-                    detectedGenres.push(genre);
-                    break;
-                }
+            const data = await response.json();
+            if (data.success) {
+                return data.suggestions || [];
             }
+            return [];
+        } catch (error) {
+            console.error('Genre suggestion error:', error);
+            return [];
         }
-
-        return detectedGenres.length > 0 ? detectedGenres : ['general'];
     }
 
     /**
-     * Generate reading recommendations based on user's library
+     * Apply a genre to a book (user-confirmed)
+     * @param {string} bookId - Book ID
+     * @param {string} genre - Genre to apply
+     * @returns {Promise<boolean>} Success status
      */
-    generateRecommendations(books, currentBook) {
-        if (books.length < 2) return [];
+    async applyGenre(bookId, genre) {
+        try {
+            const response = await fetch('/api/ai/genre', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookId, applyGenre: genre })
+            });
 
-        const currentGenres = this.autoTagGenre(currentBook);
-        const recommendations = [];
+            const data = await response.json();
+            return data.success;
+        } catch (error) {
+            console.error('Apply genre error:', error);
+            return false;
+        }
+    }
 
-        for (const book of books) {
-            if (book.id === currentBook.id) continue;
+    /**
+     * Get book recommendations from backend
+     * @param {string} bookId - Current book ID
+     * @param {number} limit - Max recommendations
+     * @returns {Promise<Array>} Recommendations
+     */
+    async getRecommendations(bookId, limit = 5) {
+        try {
+            const response = await fetch('/api/ai/recommend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookId, limit })
+            });
 
-            const bookGenres = this.autoTagGenre(book);
-            const commonGenres = currentGenres.filter(g => bookGenres.includes(g));
-
-            if (commonGenres.length > 0) {
-                recommendations.push({
-                    book,
-                    score: commonGenres.length,
-                    reason: `Similar genre: ${commonGenres.join(', ')}`
-                });
+            const data = await response.json();
+            if (data.success) {
+                return data.recommendations || [];
             }
+            return [];
+        } catch (error) {
+            console.error('Recommendations error:', error);
+            return [];
         }
-
-        return recommendations
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 5);
     }
 
     /**
-     * Extract chapter summaries from EPUB structure
+     * Get reading analytics from backend
+     * @returns {Promise<Object>} Analytics data
      */
-    async extractChapterSummaries(bookContent) {
-        // Simple extraction of first sentences from each chapter
-        const chapters = [];
-        const chapterPattern = /<h[12][^>]*>(.*?)<\/h[12]>/gi;
-        let match;
-
-        while ((match = chapterPattern.exec(bookContent)) !== null) {
-            const title = match[1].replace(/<[^>]*>/g, '');
-            chapters.push({ title, summary: 'Chapter content...' });
+    async getAnalytics() {
+        // Check cache first
+        if (this.analyticsCache && 
+            Date.now() - this.analyticsCacheTime < this.CACHE_DURATION) {
+            return this.analyticsCache;
         }
 
-        return chapters;
+        try {
+            const response = await fetch('/api/ai/analytics');
+            const data = await response.json();
+
+            if (data.success) {
+                this.analyticsCache = data.analytics;
+                this.analyticsCacheTime = Date.now();
+                return data.analytics;
+            }
+            return null;
+        } catch (error) {
+            console.error('Analytics error:', error);
+            return null;
+        }
     }
 
     /**
-     * Analyze reading speed and provide insights
+     * Get chapter summaries for a book
+     * @param {string} bookId - Book ID
+     * @param {string} content - Optional book content for parsing
+     * @returns {Promise<Array>} Chapter summaries
      */
-    analyzeReadingSpeed(sessions) {
-        if (sessions.length === 0) return null;
+    async getChapterSummaries(bookId, content = null) {
+        try {
+            const body = { bookId };
+            if (content) body.content = content;
 
-        const totalTime = sessions.reduce((sum, s) => {
-            return sum + ((s.endTime - s.startTime) / 1000 / 60);
-        }, 0);
+            const response = await fetch('/api/ai/summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
 
-        const avgSessionTime = totalTime / sessions.length;
-        const totalPages = sessions.reduce((sum, s) => sum + (s.pagesRead || 0), 0);
-        const pagesPerMinute = totalPages / totalTime;
+            const data = await response.json();
+            if (data.success) {
+                return data.chapters || [];
+            }
+            return [];
+        } catch (error) {
+            console.error('Summary error:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Calculate local XP for display (mirrors backend logic)
+     * Used for immediate UI feedback before backend sync
+     */
+    calculateLocalXP(stats) {
+        let xp = 0;
+        xp += (stats.totalBooks || 0) * 10;
+        xp += (stats.booksRead || 0) * 50;
+        xp += Math.floor((stats.totalReadingTime || 0) / 10) * 5;
+        xp += (stats.readingStreak || 0) * 10;
+        return xp;
+    }
+
+    /**
+     * Get level from XP
+     */
+    getLevel(xp) {
+        let level = 1;
+        let threshold = 100;
+        let remaining = xp;
+
+        while (remaining >= threshold) {
+            remaining -= threshold;
+            level++;
+            threshold = level * 100 + 100;
+        }
 
         return {
-            avgSessionTime: Math.round(avgSessionTime),
-            totalPages,
-            pagesPerMinute: pagesPerMinute.toFixed(2),
-            totalHours: (totalTime / 60).toFixed(1)
+            level,
+            currentXP: remaining,
+            nextLevelXP: threshold,
+            progress: Math.round((remaining / threshold) * 100)
         };
     }
 
     /**
-     * Generate XP and achievements based on reading activity
+     * Format reading time for display
      */
-    calculateReadingXP(progress, speed, consistency) {
-        let xp = 0;
-        
-        // Progress XP (0-100 points)
-        xp += Math.floor(progress);
+    formatReadingTime(minutes) {
+        if (minutes < 60) {
+            return `${minutes}m`;
+        }
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }
 
-        // Speed bonus (faster reading = more XP)
-        if (speed > 200) xp += 50;
-        else if (speed > 100) xp += 25;
+    /**
+     * Get achievement badge HTML
+     */
+    getAchievementBadge(achievement) {
+        const badges = {
+            'First Book': { icon: '📖', color: '#4CAF50' },
+            'Bookworm': { icon: '🐛', color: '#2196F3' },
+            'Library Builder': { icon: '🏛️', color: '#9C27B0' },
+            'Dedicated Reader': { icon: '📚', color: '#FF9800' },
+            'Book Master': { icon: '👑', color: '#FFD700' },
+            'Week Warrior': { icon: '⚔️', color: '#E91E63' },
+            'Month Champion': { icon: '🏆', color: '#673AB7' },
+            'Session Star': { icon: '⭐', color: '#FFC107' }
+        };
 
-        // Consistency bonus (daily reading streak)
-        xp += consistency * 10;
-
-        return xp;
+        const badge = badges[achievement] || { icon: '🎖️', color: '#607D8B' };
+        return `<span class="achievement-badge" style="background: ${badge.color}">${badge.icon} ${achievement}</span>`;
     }
 }
 

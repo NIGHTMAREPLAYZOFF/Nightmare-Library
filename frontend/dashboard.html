@@ -321,7 +321,19 @@
     <script src="/frontend/scripts/search.js"></script>
     <script src="/frontend/scripts/analytics.js"></script>
     <script src="/frontend/scripts/ai-features.js"></script>
+    <script src="/frontend/scripts/performance-mode.js"></script>
     <script type="module" src="/frontend/scripts/reading-gamification.js"></script>
     <script type="module" src="/frontend/scripts/main.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/frontend/sw.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW registration failed:', err));
+            });
+        }
+    </script>
 </body>
 </html>
