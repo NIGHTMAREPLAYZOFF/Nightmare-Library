@@ -209,10 +209,13 @@ class TextOnlyReader {
 
         if (contentEl) {
             // Render as plain text with paragraph breaks
+            contentEl.textContent = '';
             const paragraphs = chapter.content.split(/\n\n+/).filter(p => p.trim());
-            contentEl.innerHTML = paragraphs
-                .map(p => `<p>${this.escapeHtml(p.trim())}</p>`)
-                .join('');
+            paragraphs.forEach(p => {
+                const para = document.createElement('p');
+                para.textContent = p.trim();
+                contentEl.appendChild(para);
+            });
         }
 
         // Update chapter info
@@ -255,21 +258,19 @@ class TextOnlyReader {
         const list = document.getElementById('text-chapter-list');
         if (!list) return;
 
-        list.innerHTML = this.chapters
-            .map((ch, i) => `
-                <li>
-                    <button class="chapter-link ${i === this.currentChapter ? 'active' : ''}" 
-                            data-index="${i}">
-                        ${this.escapeHtml(ch.title)}
-                    </button>
-                </li>
-            `)
-            .join('');
-
-        list.querySelectorAll('.chapter-link').forEach(link => {
-            link.addEventListener('click', () => {
-                this.goToChapter(parseInt(link.dataset.index));
+        list.textContent = '';
+        
+        this.chapters.forEach((ch, i) => {
+            const li = document.createElement('li');
+            const button = document.createElement('button');
+            button.className = `chapter-link ${i === this.currentChapter ? 'active' : ''}`;
+            button.dataset.index = String(i);
+            button.textContent = ch.title;
+            button.addEventListener('click', () => {
+                this.goToChapter(parseInt(button.dataset.index));
             });
+            li.appendChild(button);
+            list.appendChild(li);
         });
     }
 
@@ -360,7 +361,11 @@ class TextOnlyReader {
     showError(message) {
         const content = document.getElementById('text-reader-content');
         if (content) {
-            content.innerHTML = `<p class="error-message">${this.escapeHtml(message)}</p>`;
+            content.textContent = '';
+            const p = document.createElement('p');
+            p.className = 'error-message';
+            p.textContent = message;
+            content.appendChild(p);
         }
     }
 

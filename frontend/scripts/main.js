@@ -412,25 +412,56 @@ function renderBooks(books, containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
+        clearElement(container);
+
         if (books.length === 0) {
-            container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">No books yet. Upload your first book!</p>';
+            const emptyMsg = createElementWithText('p', 'No books yet. Upload your first book!', {
+                style: {
+                    color: 'var(--text-muted)',
+                    textAlign: 'center',
+                    padding: '40px'
+                }
+            });
+            container.appendChild(emptyMsg);
             return;
         }
 
-        // Use the same card creation logic as the virtual shelf for consistency
+        // Build cards safely
+        const fragment = document.createDocumentFragment();
         const virtualShelfInstance = getVirtualShelfInstance();
-        container.innerHTML = books.map(book => virtualShelfInstance.createBookCard(book)).join('');
-
-        // Add click handlers
-        container.querySelectorAll('.book-card').forEach(card => {
-            card.addEventListener('click', () => openBook(card.dataset.bookId));
+        
+        books.forEach(book => {
+            const card = createElement('div', {
+                className: 'book-card',
+                dataset: { bookId: book.id },
+                tabindex: '0',
+                role: 'button'
+            });
+            
+            const content = virtualShelfInstance.createBookCardContent(book);
+            card.appendChild(content);
+            
+            card.addEventListener('click', (e) => {
+                const menuButton = card.querySelector('.card-menu');
+                if (menuButton && menuButton.contains(e.target)) {
+                    e.stopPropagation();
+                    showContextMenu(e, card.dataset.bookId);
+                } else {
+                    openBook(card.dataset.bookId);
+                }
+            });
+            
             card.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     openBook(card.dataset.bookId);
                 }
             });
+            
+            fragment.appendChild(card);
         });
+
+        container.appendChild(fragment);
     }
 }
 
