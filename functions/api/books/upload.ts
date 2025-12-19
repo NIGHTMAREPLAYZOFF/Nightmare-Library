@@ -6,8 +6,19 @@
 import { uploadFile, getStorageConfigs } from '../../storage-proxy';
 import { generateBookCardHtml } from '../../html-snippets';
 
+import { createDatabaseRouter } from '../../db-router';
+
 interface Env {
-  DB: D1Database;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
   KV_CACHE: KVNamespace;
   // Storage providers (10 total with cascading fallback)
   GDRIVE_ACCESS_TOKEN?: string;
@@ -81,6 +92,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // Create database router
+    const router = createDatabaseRouter(env);
 
     // Generate unique ID
     const bookId = `book-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

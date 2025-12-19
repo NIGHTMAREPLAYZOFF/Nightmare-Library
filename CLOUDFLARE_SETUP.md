@@ -1,418 +1,165 @@
-# Nightmare Library - Cloudflare Pages Setup Guide
-
-Complete guide to deploying Nightmare Library on Cloudflare Pages with 10 cascading storage providers.
-
-## Table of Contents
-1. [Overview](#overview)
-2. [Prerequisites](#prerequisites)
-3. [Create Cloudflare Resources](#1-create-cloudflare-resources)
-4. [Configure Storage Providers](#2-configure-storage-providers)
-5. [Set Up Secrets](#3-set-up-secrets)
-6. [Deploy to Cloudflare Pages](#4-deploy-to-cloudflare-pages)
-7. [Storage Cascading Logic](#storage-cascading-logic)
-8. [Testing Locally](#testing-locally)
-9. [Database Schema](#database-schema)
-10. [Security Features](#security-features)
+# Cloudflare Pages Deployment & Database Sharding Setup
 
 ## Overview
+This application is deployed to Cloudflare Pages with database sharding across 10 Cloudflare D1 databases. This architecture enables **up to 5GB total storage** (10 × 500MB limit per D1 database) while staying within free tier limits.
 
-This setup uses a cascading storage system with **10 free providers**:
+## Architecture
 
-| Priority | Provider | Free Tier | Notes |
-|----------|----------|-----------|-------|
-| 1 | Google Drive | 15GB | Best for primary |
-| 2 | Dropbox | 2GB | Good reliability |
-| 3 | pCloud | 10GB | No folder limit |
-| 4 | OneDrive | 5GB | Microsoft account |
-| 5 | Box | 10GB | Enterprise-ready |
-| 6 | Yandex Disk | 10GB | Russian service |
-| 7 | Koofr | 10GB | EU privacy-focused |
-| 8 | Backblaze B2 | 10GB | S3-compatible |
-| 9 | Mega.nz | 20GB | Encrypted, ONE account |
-| 10 | GitHub | 4GB | Final fallback |
+### Database Sharding
+- **10 D1 Databases**: DB_1 through DB_10
+- **Consistent Hashing**: Books are distributed across databases by book ID using a hash function
+- **Automatic Routing**: The `DatabaseRouter` class automatically routes queries to the correct database
+- **Aggregation**: List operations query all 10 databases and aggregate results
 
-**Total potential free storage: ~96GB**
+### Storage Providers (Cascading)
+- Google Drive
+- Dropbox
+- OneDrive
+- pCloud
+- Box
+- Yandex Disk
+- Koofr
+- Backblaze B2
+- Mega
+- GitHub (fallback)
 
-## Prerequisites
+## Setup Instructions
 
-- Cloudflare account (free tier works)
-- GitHub account
-- At least one storage provider account
+### 1. Create D1 Databases in Cloudflare Dashboard
 
-## 1. Create & Initialize Database
+Create 10 D1 databases in your Cloudflare account. Name them:
+```
+nightmare-library-db-1
+nightmare-library-db-2
+nightmare-library-db-3
+nightmare-library-db-4
+nightmare-library-db-5
+nightmare-library-db-6
+nightmare-library-db-7
+nightmare-library-db-8
+nightmare-library-db-9
+nightmare-library-db-10
+```
 
-### Initialize SQLite Database (Local)
+### 2. Get Database IDs
 
-For local development and long-term deployment, use SQLite instead of Cloudflare D1 to avoid the 500 MB database size limit:
+For each database, note the database ID from the Cloudflare Dashboard. You'll need these to configure bindings.
+
+### 3. Configure Cloudflare Pages Bindings
+
+In your Cloudflare Pages project settings, add these environment bindings:
+
+**Production:**
+```
+DB_1 = nightmare-library-db-1 (D1 Database)
+DB_2 = nightmare-library-db-2 (D1 Database)
+DB_3 = nightmare-library-db-3 (D1 Database)
+DB_4 = nightmare-library-db-4 (D1 Database)
+DB_5 = nightmare-library-db-5 (D1 Database)
+DB_6 = nightmare-library-db-6 (D1 Database)
+DB_7 = nightmare-library-db-7 (D1 Database)
+DB_8 = nightmare-library-db-8 (D1 Database)
+DB_9 = nightmare-library-db-9 (D1 Database)
+DB_10 = nightmare-library-db-10 (D1 Database)
+```
+
+**Also configure:**
+- `KV_SESSIONS`: Cloudflare Workers KV namespace for sessions
+- `KV_CACHE`: Cloudflare Workers KV namespace for caching
+- `JWT_SECRET`: Your JWT secret key
+
+### 4. Initialize Database Schemas
+
+Run the migration script on each database. Use Cloudflare Wrangler:
 
 ```bash
-# Install sqlite3 if not already installed
-# macOS: brew install sqlite3
-# Ubuntu/Debian: sudo apt-get install sqlite3
-# Windows: Download from https://sqlite.org/download.html
-
-# Initialize the database from schema
-npm run db:migrate
-
-# Or manually:
-sqlite3 nightmare-library.db < ./migrations/schema.sql
+# For each database, run:
+wrangler d1 execute nightmare-library-db-1 --remote --file=migrations/schema.sql
+wrangler d1 execute nightmare-library-db-2 --remote --file=migrations/schema.sql
+# ... repeat for DB_3 through DB_10
 ```
 
-This creates a `nightmare-library.db` file locally containing all tables and indexes.
+### 5. Deploy to GitHub
 
-### Optional: Cloudflare D1 (If Using Cloudflare Pages)
-
-If deploying to Cloudflare Pages and want D1 support, create a D1 database:
+Push to your GitHub repository. Cloudflare Pages will automatically build and deploy:
 
 ```bash
-npx wrangler d1 create nightmare-library-db
+git push origin main
 ```
 
-Copy the database ID and update `wrangler.toml`:
+## Database Routing Logic
 
-```toml
-[[d1_databases]]
-binding = "DB"
-database_name = "nightmare-library-db"
-database_id = "your-database-id-here"
+### How Data is Distributed
+
+The `DatabaseRouter` class in `functions/db-router.ts` uses **consistent hashing**:
+
+```typescript
+function hashBookId(bookId: string): number {
+  let hash = 0;
+  for (let i = 0; i < bookId.length; i++) {
+    const char = bookId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash) % 10; // Returns 0-9
+}
 ```
 
-Then initialize it:
+Each book's ID is hashed to determine which of the 10 databases stores it.
 
-```bash
-npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/schema.sql
+### Example
+- Book ID `book_123` hashes to database 3 → stored in `DB_3`
+- When fetching the book, the router automatically queries `DB_3`
+- List operations query all 10 databases and aggregate
+
+## API Functions Updated for Sharding
+
+- **`/api/books/list`**: Queries all 10 databases, aggregates results
+- **`/api/books/get`**: Routes to correct database by book ID
+- **`/api/books/upload`**: Routes to correct database by book ID
+- **`/api/books/delete`**: Routes to correct database by book ID
+
+## Monitoring & Debugging
+
+### Check Database Index
+To see which database a book is stored in:
+```typescript
+const router = createDatabaseRouter(env);
+const dbIndex = router.getDbIndex(bookId);
+console.log(`Book stored in database: DB_${dbIndex + 1}`);
 ```
 
-**Note:** D1 has a 500 MB single-database limit. For larger libraries, use local SQLite or split across multiple D1 databases.
-
-### Create KV Namespaces
-
-```bash
-npx wrangler kv:namespace create "KV_SESSIONS"
-npx wrangler kv:namespace create "KV_CACHE"
-npx wrangler kv:namespace create "KV_RATE_LIMIT"
+### Query Specific Database
+```typescript
+const router = createDatabaseRouter(env);
+const db = router.queryForBook(bookId);
+const result = await db.prepare("SELECT * FROM books WHERE id = ?").bind(bookId).first();
 ```
 
-Update `wrangler.toml` with the namespace IDs.
+### Check Database Sizes
+In Cloudflare Dashboard → D1 Databases, view the storage usage for each database.
 
-## 2. Configure Storage Providers
-
-### Google Drive (Priority 1 - Recommended Primary)
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project
-3. Enable Google Drive API
-4. Create OAuth 2.0 credentials
-5. Generate an access token
-6. (Optional) Create a specific folder for books
-
-**Required Secrets:**
-- `GDRIVE_ACCESS_TOKEN` - OAuth2 access token
-- `GDRIVE_FOLDER_ID` (optional) - Folder ID for book storage
-
-### Dropbox (Priority 2)
-
-1. Go to [Dropbox App Console](https://www.dropbox.com/developers/apps)
-2. Create a new app with "Full Dropbox" access
-3. Generate an access token
-
-**Required Secrets:**
-- `DROPBOX_ACCESS_TOKEN` - App access token
-- `DROPBOX_PATH` (optional) - Base path (e.g., `/NightmareLibrary`)
-
-### pCloud (Priority 3)
-
-1. Go to [pCloud Developer Console](https://docs.pcloud.com/)
-2. Create an OAuth app
-3. Get access token
-
-**Required Secrets:**
-- `PCLOUD_ACCESS_TOKEN` - OAuth access token
-- `PCLOUD_FOLDER_ID` (optional) - Folder ID
-
-### OneDrive (Priority 4)
-
-1. Go to [Azure Portal](https://portal.azure.com/)
-2. Register a new application
-3. Create a client secret
-4. Get OAuth access token
-
-**Required Secrets:**
-- `ONEDRIVE_ACCESS_TOKEN` - OAuth access token
-- `ONEDRIVE_FOLDER_ID` (optional) - Folder ID
-
-### Box (Priority 5)
-
-1. Go to [Box Developer Console](https://developer.box.com/)
-2. Create a new application
-3. Configure OAuth 2.0
-4. Get access token
-
-**Required Secrets:**
-- `BOX_ACCESS_TOKEN` - OAuth access token
-- `BOX_FOLDER_ID` (optional) - Folder ID
-
-### Yandex Disk (Priority 6)
-
-1. Go to [Yandex OAuth](https://oauth.yandex.com/)
-2. Create a new application
-3. Get OAuth token
-
-**Required Secrets:**
-- `YANDEX_ACCESS_TOKEN` - OAuth token
-- `YANDEX_PATH` (optional) - Base path
-
-### Koofr (Priority 7)
-
-1. Go to [Koofr](https://koofr.eu/)
-2. Create an account
-3. Generate an API token in settings
-
-**Required Secrets:**
-- `KOOFR_ACCESS_TOKEN` - API token
-- `KOOFR_MOUNT_ID` (optional) - Mount point ID
-
-### Backblaze B2 (Priority 8)
-
-1. Go to [Backblaze B2](https://www.backblaze.com/b2/)
-2. Create an application key
-3. Create a bucket
-
-**Required Secrets:**
-- `B2_APPLICATION_KEY_ID` - Application key ID
-- `B2_APPLICATION_KEY` - Application key
-- `B2_BUCKET_NAME` - Bucket name
-- `B2_BUCKET_ID` (optional) - Bucket ID
-
-### Mega.nz (Priority 9)
-
-1. Create a [Mega.nz account](https://mega.nz/)
-2. Use your login credentials
-
-**Required Secrets:**
-- `MEGA_EMAIL` - Your Mega.nz email
-- `MEGA_PASSWORD` - Your Mega.nz password
-- `MEGA_FOLDER_ID` (optional) - Folder ID
-
-**⚠️ Warning:** One account only. Mega requires complex client-side encryption.
-
-### GitHub (Priority 10 - Final Fallback)
-
-1. Go to GitHub → Settings → Developer Settings → Personal Access Tokens
-2. Generate new token (classic) with `repo` scope
-3. System creates private repo `nightmare-library-storage`
-
-**Required Secrets:**
-- `GITHUB_TOKEN` - Personal Access Token
-- `GITHUB_OWNER` - Your GitHub username
-- `GITHUB_REPO` (optional) - Custom repo name
-
-**⚠️ Hard limit: 4GB total storage**
-
-## 3. Set Up Secrets
-
-### Required Secrets (Must Have)
-
-```bash
-# Authentication
-npx wrangler secret put PASSWORD
-npx wrangler secret put JWT_SECRET
-```
-
-### Storage Provider Secrets (Choose at least one)
-
-```bash
-# Google Drive
-npx wrangler secret put GDRIVE_ACCESS_TOKEN
-npx wrangler secret put GDRIVE_FOLDER_ID
-
-# Dropbox
-npx wrangler secret put DROPBOX_ACCESS_TOKEN
-
-# pCloud
-npx wrangler secret put PCLOUD_ACCESS_TOKEN
-
-# OneDrive
-npx wrangler secret put ONEDRIVE_ACCESS_TOKEN
-
-# Box
-npx wrangler secret put BOX_ACCESS_TOKEN
-
-# Yandex
-npx wrangler secret put YANDEX_ACCESS_TOKEN
-
-# Koofr
-npx wrangler secret put KOOFR_ACCESS_TOKEN
-
-# Backblaze B2
-npx wrangler secret put B2_APPLICATION_KEY_ID
-npx wrangler secret put B2_APPLICATION_KEY
-npx wrangler secret put B2_BUCKET_NAME
-
-# Mega.nz
-npx wrangler secret put MEGA_EMAIL
-npx wrangler secret put MEGA_PASSWORD
-
-# GitHub (recommended as fallback)
-npx wrangler secret put GITHUB_TOKEN
-npx wrangler secret put GITHUB_OWNER
-```
-
-## 4. Deploy to Cloudflare Pages
-
-### Via Git Integration
-
-1. Go to **Cloudflare Dashboard → Pages**
-2. Click **"Create a project" → "Connect to Git"**
-3. Authorize GitHub and select your repository
-4. Configure:
-   - **Project name**: `nightmare-library`
-   - **Production branch**: `main`
-   - **Build command**: (leave empty)
-   - **Build output directory**: `.`
-5. Add bindings in **Settings**:
-   - **D1 database**: Variable `DB` → `nightmare-library-db`
-   - **KV namespaces**: `KV_SESSIONS`, `KV_CACHE`, `KV_RATE_LIMIT`
-6. Add all secrets in **Settings → Environment Variables**
-
-### Via Wrangler CLI
-
-```bash
-npx wrangler pages deploy .
-```
-
-## Storage Cascading Logic
-
-The system tries providers in priority order (1-10). If one fails:
-1. Mark provider as unhealthy
-2. Try next provider in order
-3. Log failure for monitoring
-4. Auto-retry healthy providers after 5 minutes
+## Environment Variables Required
 
 ```
-Upload Request
-    ↓
-Google Drive → Dropbox → pCloud → OneDrive → Box
-    ↓                                           ↓
-Yandex → Koofr → B2 → Mega → GitHub (4GB max)
+DB_1 through DB_10      # D1 Database bindings
+KV_SESSIONS             # Session storage
+KV_CACHE                # Query caching
+JWT_SECRET              # Session signing
+
+# Optional storage provider credentials
+GDRIVE_ACCESS_TOKEN, GDRIVE_FOLDER_ID
+DROPBOX_ACCESS_TOKEN, DROPBOX_PATH
+ONEDRIVE_ACCESS_TOKEN, ONEDRIVE_FOLDER_ID
+# ... etc for other providers
 ```
 
-## Testing Locally
+## Next Steps
 
-### 1. Initialize Database
+1. Create 10 D1 databases
+2. Configure Cloudflare Pages bindings
+3. Run schema migrations
+4. Deploy to GitHub
+5. Test book upload/list/read operations
 
-```bash
-# Set up SQLite database
-npm run db:migrate
-```
-
-### 2. Start Dev Server
-
-```bash
-npm run dev
-```
-
-### 3. Create `.dev.vars` with Secrets
-
-```
-PASSWORD=your-test-password
-JWT_SECRET=your-64-char-secret
-GDRIVE_ACCESS_TOKEN=...
-GITHUB_TOKEN=...
-GITHUB_OWNER=...
-```
-
-## Database Schema
-
-The database uses a single consolidated schema file that works with both SQLite and D1:
-
-**For SQLite (Recommended):**
-```bash
-npm run db:migrate
-```
-
-**For D1 (Cloudflare Pages):**
-```bash
-npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/schema.sql
-```
-
-### Tables
-- `books` - Book metadata
-- `shelves` - User-created shelves
-- `shelf_items` - Book-shelf associations
-- `progress` - Reading progress
-- `settings` - User settings (2FA, performance mode)
-- `book_content_index` - Full-text search
-- `reading_stats` - Reading session tracking
-- `offline_cache` - Cached books tracking
-- `storage_providers` - Provider health status
-
-## Security Features
-
-### Optional 2FA Protection
-- Enable in Settings
-- Locks all books behind a password
-- Separate from login password
-- Uses constant-time password comparison
-
-### Session Security
-- HttpOnly cookies
-- Secure flag (HTTPS only)
-- SameSite=Strict
-- IP and User-Agent validation
-- Rate limiting on login attempts
-
-### Data Protection
-- Input sanitization on all fields
-- XSS prevention via DOM helpers
-- No sensitive data in frontend
-- Secrets stored in Cloudflare only
-
-## Monitoring
-
-### View Logs
-```bash
-npx wrangler pages deployment tail
-```
-
-### Check Storage Health
-- Visit `/api/storage/status` (authenticated)
-- Shows all provider statuses
-- Usage statistics per provider
-
-## Troubleshooting
-
-### Storage Upload Fails
-1. Check secret values are set
-2. Verify token permissions
-3. Check provider-specific limits
-4. Review Functions logs
-
-### Database Migration Fails
-
-**For SQLite:**
-```bash
-# Check database status
-sqlite3 nightmare-library.db ".tables"
-
-# Re-run migration
-npm run db:migrate
-
-# Or manually:
-sqlite3 nightmare-library.db < ./migrations/schema.sql
-```
-
-**For D1 (if using Cloudflare Pages):**
-```bash
-npx wrangler d1 info nightmare-library-db
-npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/schema.sql
-```
-
-### Session Issues
-- Verify JWT_SECRET is set
-- Check cookie settings
-- Ensure HTTPS is enabled
-
----
-
-*May your books be safe and your storage never full.*
+The database router will automatically handle distribution and querying!

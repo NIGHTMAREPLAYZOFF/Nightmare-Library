@@ -4,9 +4,19 @@
  */
 
 import { deleteFile, getStorageConfigs, StorageConfig } from '../../storage-proxy';
+import { createDatabaseRouter } from '../../db-router';
 
 interface Env {
-  DB: D1Database;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
   KV_CACHE: KVNamespace;
   STORAGE_PROVIDER_1_TYPE: string;
   STORAGE_PROVIDER_1_BUCKET: string;
@@ -35,8 +45,12 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
       });
     }
 
+    // Create database router
+    const router = createDatabaseRouter(env);
+    const db = router.queryForBook(id);
+
     // Get book info for storage deletion
-    const book = await env.DB.prepare(`
+    const book = await db.prepare(`
       SELECT storage_provider, storage_id FROM books WHERE id = ?
     `).bind(id).first() as { storage_provider: string; storage_id: string } | null;
 
@@ -75,13 +89,13 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
 
     // Cascade delete from database
     // 1. Delete from shelf_items
-    await env.DB.prepare('DELETE FROM shelf_items WHERE book_id = ?').bind(id).run();
+    await db.prepare('DELETE FROM shelf_items WHERE book_id = ?').bind(id).run();
 
     // 2. Delete from progress
-    await env.DB.prepare('DELETE FROM progress WHERE book_id = ?').bind(id).run();
+    await db.prepare('DELETE FROM progress WHERE book_id = ?').bind(id).run();
 
     // 3. Delete from books
-    await env.DB.prepare('DELETE FROM books WHERE id = ?').bind(id).run();
+    await db.prepare('DELETE FROM books WHERE id = ?').bind(id).run();
 
     // 4. Clear cache
     await env.KV_CACHE.delete('books_list');

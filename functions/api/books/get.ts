@@ -4,9 +4,19 @@
  */
 
 import { downloadFile, getStorageConfigs } from '../../storage-proxy';
+import { createDatabaseRouter } from '../../db-router';
 
 interface Env {
-  DB: D1Database;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
@@ -25,8 +35,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   }
 
   try {
+    // Create database router
+    const router = createDatabaseRouter(env);
+    const db = router.queryForBook(bookId);
+
     // Get book details
-    const bookResult = await env.DB.prepare(`
+    const bookResult = await db.prepare(`
       SELECT
         b.id, b.title, b.author, b.tags, b.cover_url, b.file_type,
         b.file_size, b.total_pages, b.uploaded_at, b.last_read_at,
@@ -46,14 +60,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
 
     // Get progress
-    const progressResult = await env.DB.prepare(`
+    const progressResult = await db.prepare(`
       SELECT percent, current_page, current_chapter, last_read_at
       FROM progress
       WHERE book_id = ?
     `).bind(bookId).first();
 
     // Get settings
-    const settingsResult = await env.DB.prepare(`
+    const settingsResult = await db.prepare(`
       SELECT reader_theme, reader_font_size
       FROM settings
       WHERE id = 1

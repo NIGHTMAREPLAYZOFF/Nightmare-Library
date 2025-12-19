@@ -4,9 +4,19 @@
  */
 
 import { generateBookCardHtml, type Book } from '../../html-snippets';
+import { createDatabaseRouter } from '../../db-router';
 
 interface Env {
-  DB: D1Database;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
   KV_CACHE: KVNamespace;
 }
 
@@ -22,8 +32,11 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       });
     }
 
-    // Query database
-    const result = await env.DB.prepare(`
+    // Create database router
+    const router = createDatabaseRouter(env);
+
+    // Query all databases
+    const books = await router.queryAll(`
       SELECT 
         b.id, b.title, b.author, b.tags, b.cover_url, b.file_type,
         b.file_size, b.total_pages, b.uploaded_at, b.last_read_at,
@@ -31,13 +44,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       FROM books b
       LEFT JOIN progress p ON b.id = p.book_id
       ORDER BY b.uploaded_at DESC
-    `).all();
+    `);
 
-    if (!result.success) {
-      throw new Error('Database query failed');
-    }
-
-    const books = (result.results || []).map((row: any) => ({
+    const mappedBooks = books.map((row: any) => ({
       id: row.id,
       title: row.title,
       author: row.author,
@@ -60,7 +69,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       })
     }));
 
-    const response = { success: true, books };
+    const response = { success: true, books: mappedBooks };
 
     // Cache for 5 minutes
     await env.KV_CACHE.put('books_list', JSON.stringify(response), {
