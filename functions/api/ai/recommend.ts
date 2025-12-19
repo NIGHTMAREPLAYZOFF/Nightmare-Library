@@ -3,9 +3,20 @@
  * POST /api/ai/recommend - Get book recommendations based on reading history
  */
 
+import { createDatabaseRouter } from '../../db-router';
+
 interface Env {
-  DB: D1Database;
-  KV_CACHE: KVNamespace;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
+  KV_CACHE?: KVNamespace;
 }
 
 interface Book {
@@ -70,7 +81,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // Get current book
-    const currentBook = await env.DB.prepare(
+    const router = createDatabaseRouter(env);
+    const db = router.queryForBook(bookId);
+    const currentBook = await db.prepare(
       'SELECT id, title, author, tags, last_read_at FROM books WHERE id = ?'
     ).bind(bookId).first() as Book | null;
 
@@ -84,12 +97,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
     }
 
-    // Get all other books
-    const allBooks = await env.DB.prepare(
-      'SELECT id, title, author, tags, last_read_at FROM books WHERE id != ? ORDER BY last_read_at DESC LIMIT 100'
-    ).bind(bookId).all();
+    // Get all other books from all databases
+    const allBooks = await router.queryAll(
+      'SELECT id, title, author, tags, last_read_at FROM books ORDER BY last_read_at DESC LIMIT 100'
+    );
 
-    if (!allBooks.results || allBooks.results.length === 0) {
+    if (!allBooks || allBooks.length === 0) {
       return new Response(JSON.stringify({
         success: true,
         recommendations: []
@@ -102,7 +115,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const currentGenres = detectGenres(currentBook);
     const recommendations: Recommendation[] = [];
 
-    for (const book of allBooks.results as unknown as Book[]) {
+    for (const book of (allBooks as unknown as Book[]).filter(b => b.id !== bookId)) {
       const bookGenres = detectGenres(book);
       const commonGenres = currentGenres.filter(g => bookGenres.includes(g));
 

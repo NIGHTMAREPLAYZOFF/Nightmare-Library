@@ -173,3 +173,15 @@ CREATE TABLE IF NOT EXISTS provider_mapping (
 CREATE INDEX IF NOT EXISTS idx_provider_mapping_book ON provider_mapping(book_id);
 CREATE INDEX IF NOT EXISTS idx_provider_mapping_provider ON provider_mapping(provider_type);
 CREATE INDEX IF NOT EXISTS idx_provider_mapping_primary ON provider_mapping(is_primary);
+
+-- ============================================
+-- 2FA SETTINGS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS two_factor_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled INTEGER DEFAULT 0,
+    password_hash TEXT,
+    backup_codes TEXT,
+    created_at INTEGER,
+    updated_at INTEGER NOT NULL
+);

@@ -3,8 +3,19 @@
  * POST /api/ai/genre - Suggest genres for a book (user must confirm)
  */
 
+import { createDatabaseRouter } from '../../db-router';
+
 interface Env {
-  DB: D1Database;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
 }
 
 interface GenreSuggestion {
@@ -73,7 +84,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // If applyGenre is provided, update the book's tags
     if (body.applyGenre && body.bookId) {
-      const book = await env.DB.prepare(
+      const router = createDatabaseRouter(env);
+      const db = router.queryForBook(body.bookId);
+      const book = await db.prepare(
         'SELECT tags FROM books WHERE id = ?'
       ).bind(body.bookId).first() as { tags: string | null } | null;
 
@@ -93,7 +106,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         existingTags.push(body.applyGenre);
       }
 
-      await env.DB.prepare(
+      await db.prepare(
         'UPDATE books SET tags = ? WHERE id = ?'
       ).bind(existingTags.join(', '), body.bookId).run();
 
@@ -112,7 +125,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     let tags = body.tags;
 
     if (body.bookId && !title) {
-      const book = await env.DB.prepare(
+      const router = createDatabaseRouter(env);
+      const db = router.queryForBook(body.bookId);
+      const book = await db.prepare(
         'SELECT title, author, tags FROM books WHERE id = ?'
       ).bind(body.bookId).first() as { title: string; author: string | null; tags: string | null } | null;
 

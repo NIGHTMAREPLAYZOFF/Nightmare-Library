@@ -3,9 +3,20 @@
  * GET /api/ai/analytics - Get reading statistics and insights
  */
 
+import { createDatabaseRouter } from '../../db-router';
+
 interface Env {
-  DB: D1Database;
-  KV_CACHE: KVNamespace;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
+  KV_CACHE?: KVNamespace;
 }
 
 interface ReadingStats {
@@ -103,24 +114,25 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       }
     }
 
-    // Get all books
-    const booksResult = await env.DB.prepare(
+    // Get all books from all databases
+    const router = createDatabaseRouter(env);
+    const booksResult = await router.queryAll(
       'SELECT id, title, author, tags FROM books'
-    ).all();
+    );
 
-    // Get all progress
-    const progressResult = await env.DB.prepare(
+    // Get all progress from all databases
+    const progressResult = await router.queryAll(
       'SELECT book_id, percent, last_read_at FROM progress'
-    ).all();
+    );
 
-    // Get reading sessions
-    const sessionsResult = await env.DB.prepare(
+    // Get reading sessions from all databases
+    const sessionsResult = await router.queryAll(
       'SELECT book_id, session_start, session_end, pages_read FROM reading_stats ORDER BY session_start DESC LIMIT 1000'
-    ).all();
+    );
 
-    const books = (booksResult.results || []) as unknown as Array<{ title: string; author: string | null; tags: string | null }>;
-    const progress = (progressResult.results || []) as unknown as Array<{ book_id: string; percent: number; last_read_at: number }>;
-    const sessions = (sessionsResult.results || []) as unknown as ReadingSession[];
+    const books = (booksResult || []) as unknown as Array<{ title: string; author: string | null; tags: string | null }>;
+    const progress = (progressResult || []) as unknown as Array<{ book_id: string; percent: number; last_read_at: number }>;
+    const sessions = (sessionsResult || []) as unknown as ReadingSession[];
 
     // Calculate statistics
     const totalBooks = books.length;

@@ -3,9 +3,20 @@
  * POST /api/ai/summary - Extract chapter summaries from book content
  */
 
+import { createDatabaseRouter } from '../../db-router';
+
 interface Env {
-  DB: D1Database;
-  KV_CACHE: KVNamespace;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
+  KV_CACHE?: KVNamespace;
 }
 
 interface ChapterSummary {
@@ -45,12 +56,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // Check if we have indexed content in the database
-    const indexedContent = await env.DB.prepare(
+    const router = createDatabaseRouter(env);
+    const db = router.queryForBook(bookId);
+    const indexedContent = await db.prepare(
       'SELECT chapter, content_text, snippet, position FROM book_content_index WHERE book_id = ? ORDER BY position'
     ).bind(bookId).all();
 
-    if (indexedContent.results && indexedContent.results.length > 0) {
-      const rows = indexedContent.results as unknown as Array<{
+    if (indexedContent && Array.isArray(indexedContent) && indexedContent.length > 0) {
+      const rows = indexedContent as unknown as Array<{
         chapter: string;
         snippet: string;
         position: number;
