@@ -125,11 +125,13 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js" integrity="sha384-3XVHiS3Z4lBv0XEEshQfHhFEDO4C+UKCWoEwNb4RVkbhJkkfvp8C4l4E9xZYmhcl+" crossorigin="anonymous"></script>
     <!-- pdf.js from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js" integrity="sha384-IQVVVDNK72iFv7BKnSDGvz6dNr3DQVQC7RJXxXLg0Y6vc1V7zNEpBpYfKaQ63hZf" crossorigin="anonymous"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+        // Disable CORS for pdf.js worker
+        pdfjsLib.GlobalWorkerOptions.disableWorker = false;
     </script>
     <script type="module" src="/frontend/scripts/dom-helpers.js"></script>
     <script src="/frontend/scripts/tts-engine.js"></script>

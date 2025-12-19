@@ -59,7 +59,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       WHERE id = 1
     `).first();
 
-    const storageConfigs = await getStorageConfigs(env);
+    const storageConfigs = await getStorageConfigs(env as unknown as Record<string, string>);
 
     return new Response(JSON.stringify({
       success: true,

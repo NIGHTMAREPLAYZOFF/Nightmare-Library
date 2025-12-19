@@ -13,9 +13,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const fileEntry = formData.get('file');
 
-    if (!file) {
+    if (!fileEntry || typeof fileEntry === 'string') {
       return new Response(JSON.stringify({ 
         success: false, 
         message: 'No file provided' 
@@ -26,6 +26,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // Basic EPUB metadata extraction
+    const file = fileEntry as File;
     const arrayBuffer = await file.arrayBuffer();
     const metadata = await extractEpubMetadata(arrayBuffer);
 

@@ -50,8 +50,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         }
 
         // Shared tags
-        const currentTags = (currentBook.tags || '').split(',').map((t: string) => t.trim().toLowerCase());
-        const bookTags = (b.tags || '').split(',').map((t: string) => t.trim().toLowerCase());
+        const currentTags = (typeof currentBook.tags === 'string' ? currentBook.tags : '').split(',').map((t: string) => t.trim().toLowerCase());
+        const bookTags = (typeof b.tags === 'string' ? b.tags : '').split(',').map((t: string) => t.trim().toLowerCase());
         const sharedTags = currentTags.filter((t: string) => bookTags.includes(t));
         score += sharedTags.length * 2;
 
