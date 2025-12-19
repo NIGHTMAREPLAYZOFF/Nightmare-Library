@@ -4,8 +4,19 @@
  * GET /api/books/recommend?bookId=xxx - Get AI-powered recommendations
  */
 
+import { createDatabaseRouter } from '../../db-router';
+
 interface Env {
-  DB: D1Database;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
@@ -15,11 +26,21 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   try {
     // Get all books
-    const result = await env.DB.prepare(`
+    const router = createDatabaseRouter(env);
+    const results = await router.queryAll(`
       SELECT id, title, author, tags
       FROM books
       ORDER BY uploaded_at DESC
-    `).all();
+    `);
+    
+    if (!results) {
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'Failed to load books'
+      }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+    
+    const result = { success: true, results };
 
     if (!result.success || !result.results) {
       return new Response(JSON.stringify({

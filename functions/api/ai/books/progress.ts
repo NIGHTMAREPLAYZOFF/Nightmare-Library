@@ -4,8 +4,20 @@
  * POST /api/books/progress - Save progress
  */
 
+import { createDatabaseRouter } from '../../db-router';
+
 interface Env {
-  DB: D1Database;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
+  KV_CACHE?: KVNamespace;
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
@@ -24,7 +36,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   }
 
   try {
-    const progress = await env.DB.prepare(`
+    const router = createDatabaseRouter(env);
+    const db = router.queryForBook(bookId);
+    const progress = await db.prepare(`
       SELECT percent, current_page, current_chapter, last_read_at
       FROM progress WHERE book_id = ?
     `).bind(bookId).first();
@@ -73,8 +87,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     const now = Date.now();
 
+    const router = createDatabaseRouter(env);
+    const db = router.queryForBook(bookId);
+
     // Upsert progress
-    await env.DB.prepare(`
+    await db.prepare(`
       INSERT INTO progress (book_id, percent, current_page, current_chapter, last_read_at)
       VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(book_id) DO UPDATE SET
@@ -85,7 +102,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     `).bind(bookId, percent || 0, currentPage || null, currentChapter || null, now).run();
 
     // Update book's last_read_at
-    await env.DB.prepare(`
+    await db.prepare(`
       UPDATE books SET last_read_at = ? WHERE id = ?
     `).bind(now, bookId).run();
 

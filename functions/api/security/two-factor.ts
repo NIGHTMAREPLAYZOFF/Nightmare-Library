@@ -124,7 +124,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         const passwordHash = await hashPassword(newPassword);
 
         // Update settings
-        await env.DB.prepare(`
+        await db.prepare(`
           UPDATE settings 
           SET two_factor_enabled = 1, 
               two_factor_hash = ?,
@@ -162,7 +162,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }
 
         // Get stored hash
-        const settings = await env.DB.prepare(
+        const settings = await db.prepare(
           'SELECT two_factor_hash FROM settings WHERE id = 1'
         ).first() as { two_factor_hash: string } | null;
 
@@ -188,7 +188,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }
 
         // Disable 2FA
-        await env.DB.prepare(`
+        await db.prepare(`
           UPDATE settings 
           SET two_factor_enabled = 0, 
               two_factor_hash = NULL,
@@ -216,7 +216,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }
 
         // Get stored hash
-        const settings = await env.DB.prepare(
+        const settings = await db.prepare(
           'SELECT two_factor_hash, two_factor_enabled FROM settings WHERE id = 1'
         ).first() as { two_factor_hash: string; two_factor_enabled: number } | null;
 

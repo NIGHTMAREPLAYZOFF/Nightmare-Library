@@ -4,9 +4,19 @@
  */
 
 import { generateShelfItemHtml } from '../../html-snippets';
+import { createDatabaseRouter } from '../../db-router';
 
 interface Env {
-  DB: D1Database;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
@@ -14,7 +24,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   try {
     // Get all shelves
-    const shelvesResult = await env.DB.prepare(`
+    const router = createDatabaseRouter(env);
+    const db = router.getAllDatabases()[0]; // Shelves in DB_1
+    const shelvesResult = await db.prepare(`
       SELECT id, name, color, position, created_at
       FROM shelves
       ORDER BY position ASC, created_at ASC
@@ -27,7 +39,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     // Get book IDs for each shelf
     const shelves = await Promise.all(
       (shelvesResult.results || []).map(async (shelf: any) => {
-        const booksResult = await env.DB.prepare(`
+        const booksResult = await db.prepare(`
           SELECT book_id FROM shelf_items WHERE shelf_id = ?
         `).bind(shelf.id).all();
 

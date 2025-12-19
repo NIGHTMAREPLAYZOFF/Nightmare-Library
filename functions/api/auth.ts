@@ -4,11 +4,23 @@
  * POST /api/auth - Login with password
  */
 
+import { createDatabaseRouter } from '../../db-router';
+
 interface Env {
   PASSWORD: string;
   JWT_SECRET: string;
   KV_SESSIONS: KVNamespace;
   KV_RATE_LIMIT: KVNamespace;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
 }
 
 interface LoginAttempt {

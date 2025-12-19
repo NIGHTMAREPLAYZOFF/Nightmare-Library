@@ -3,8 +3,19 @@
  * POST /api/shelves/create - Create new shelf
  */
 
+import { createDatabaseRouter } from '../../db-router';
+
 interface Env {
-  DB: D1Database;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
 }
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
@@ -27,14 +38,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const shelfId = `shelf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const now = Date.now();
 
+    const router = createDatabaseRouter(env);
+    const db = router.getAllDatabases()[0]; // Shelves in DB_1
+
     // Get max position
-    const maxPos = await env.DB.prepare(`
+    const maxPos = await db.prepare(`
       SELECT MAX(position) as max_pos FROM shelves
     `).first() as { max_pos: number | null } | null;
 
     const position = (maxPos?.max_pos ?? -1) + 1;
 
-    await env.DB.prepare(`
+    await db.prepare(`
       INSERT INTO shelves (id, name, color, position, created_at)
       VALUES (?, ?, ?, ?, ?)
     `).bind(shelfId, name.trim(), color || '#bb86fc', position, now).run();
