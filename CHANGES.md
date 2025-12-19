@@ -1,205 +1,168 @@
-# Nightmare Library - Changes Log
+# Nightmare Library - Change Log
 
-## Version 2.0.0 - Major Refactor (December 2024)
+## Latest Session - Database Sharding Implementation (December 19, 2024)
 
-This update completely overhauls Nightmare Library for Cloudflare Pages compliance, security, performance, and feature accuracy.
+### ✅ COMPLETED THIS SESSION
 
----
+**Database Architecture**
+- [x] Created `functions/db-router.ts` - Distributed database router using consistent hashing
+- [x] Implemented 10-database sharding across Cloudflare D1 (5GB total capacity)
+- [x] Updated `_middleware.ts` to support DB_1-DB_10 bindings
+- [x] Updated critical API endpoints to use DatabaseRouter:
+  - [x] `/api/books/list` - Queries all 10 databases, aggregates results
+  - [x] `/api/books/upload` - Routes new books to correct shard
+  - [x] `/api/books/get` - Retrieves from correct shard
+  - [x] `/api/books/delete` - Deletes from correct shard
+  - [x] `/api/security/two-factor.ts` - Partially migrated to new pattern
 
-### Infrastructure Changes
+**Documentation**
+- [x] Created `CODEBASE_EXPLANATION.txt` (534 lines) - Comprehensive AI assistant guide
+- [x] Updated `CLOUDFLARE_SETUP.md` - Complete D1 sharding instructions
+- [x] Created `EMERGENCY_PROMPT.txt` - Remaining tasks and blockers
+- [x] Created `create-zip.sh` - Project archive script
 
-#### Storage Providers Expanded (4 → 10)
-**Added:**
-- OneDrive (5GB free)
-- pCloud (10GB free)
-- Box (10GB free)
-- Yandex Disk (10GB free)
-- Koofr (10GB free)
-- Backblaze B2 (10GB free)
+**Security**
+- [x] Fixed all XSS vulnerabilities (innerHTML → safe DOM methods)
+- [x] Upgraded Hono: 3.12.6 → 4.6.13
 
-**Existing:**
-- Google Drive (15GB free)
-- Dropbox (2GB free)
-- Mega.nz (20GB, ONE account only)
-- GitHub (4GB fallback limit)
+### ⚠️ CRITICAL TASKS REMAINING
 
-**Why:** More storage options = more free space for users without credit cards.
+**Database Pattern Migration (12 files)**
+- [ ] `functions/api/books/progress.ts`
+- [ ] `functions/api/books/update.ts`
+- [ ] `functions/api/books/favorite.ts`
+- [ ] `functions/api/books/metadata.ts`
+- [ ] `functions/api/books/recommend.ts`
+- [ ] `functions/api/books/search-content.ts`
+- [ ] `functions/api/settings/get.ts`
+- [ ] `functions/api/settings/update.ts`
+- [ ] `functions/api/shelves/list.ts`
+- [ ] `functions/api/shelves/create.ts`
+- [ ] `functions/api/shelves/add-book.ts`
+- [ ] `functions/api/auth.ts`
 
-#### Cascading Failover Logic
-- Automatic failover between providers
-- Provider health tracking with automatic recovery
-- Priority-based ordering
-- GitHub remains final fallback (4GB limit enforced)
+**Action:** Replace `env.DB` with `createDatabaseRouter(env)` pattern
+- See EMERGENCY_PROMPT.txt for detailed instructions
 
-**File:** `functions/storage-proxy.ts`
+**Storage Providers (10/10 need verification)**
+- [ ] Google Drive - Verify API integration
+- [ ] Dropbox - Complete implementation
+- [ ] OneDrive - Complete implementation
+- [ ] pCloud - Complete implementation
+- [ ] Box - Complete implementation
+- [ ] Yandex Disk - Complete implementation
+- [ ] Koofr - Complete implementation
+- [ ] Backblaze B2 - Complete implementation
+- [ ] Mega.nz - Crypto implementation
+- [ ] GitHub - Fallback implementation
 
----
+**Action:** See EMERGENCY_PROMPT.txt Task #2 for details
 
-### AI Features Refactor
+**Frontend & Readers**
+- [ ] Complete EPUB.js integration
+- [ ] Verify PDF.js workers setup
+- [ ] Text-only reader offline capability
+- [ ] Reader format fallback chain (EPUB→PDF→Text)
 
-#### Removed (Bloat/Inaccuracy)
-- ❌ Auto-genre assignment - Removed completely
-- ❌ Client-side AI processing - Moved to backend
+**Security - 2FA Complete Backend**
+- [ ] Replace remaining `env.DB` calls in two-factor.ts
+- [ ] Implement frontend UI toggle for 2FA
+- [ ] Add 2fa_settings table to schema
+- [ ] Test session invalidation on 2FA changes
 
-#### Backend-Only AI (New)
-- ✅ `/api/ai/recommend` - Book recommendations based on reading history
-- ✅ `/api/ai/analytics` - Reading statistics, XP, achievements, streaks
-- ✅ `/api/ai/summary` - Chapter summary extraction (first sentences)
-- ✅ `/api/ai/genre` - User-initiated genre suggestions (must confirm)
+**Performance**
+- [ ] Add virtual scrolling for large libraries
+- [ ] Implement lazy loading for book covers
+- [ ] Add Performance Mode toggle
+- [ ] Optimize frontend bundle
 
-**Why:** AI features must provide measurable value. Auto-genre was inaccurate and bloated.
+### 🔴 KNOWN ISSUES
 
----
+**TypeScript Diagnostics: 95 errors**
+- storage-proxy.ts: 60 diagnostics (fetch/crypto/FormData scope)
+- two-factor.ts: 35 diagnostics (type resolution + remaining DB references)
+- Root cause: Missing global type scope declarations
+- Fix needed: Add `/// <reference lib="dom" />` to affected files
 
-### Security Enhancements
+**Database Routing Incomplete**
+- Only 4 of 16 API files updated to use DatabaseRouter
+- Production deployment will fail with multiple D1 databases
+- See EMERGENCY_PROMPT.txt for migration checklist
 
-#### Optional 2FA Protection
-- Lock all books under user-defined password
-- Enable/disable via settings
-- Constant-time password comparison
-- Session-based verification
+**Storage Implementations Incomplete**
+- Most provider API calls are stubs
+- Real implementations not integrated
+- See functions/storage-proxy.ts for TODOs
 
-**File:** `functions/api/security/two-factor.ts`
+### 📊 PROJECT STATE
 
-#### Existing Security (Verified)
-- Input sanitization via `dom-helpers.js`
-- Secure session management (HttpOnly, Secure, SameSite cookies)
-- Rate limiting on login attempts
-- IP/User-Agent session validation
-- HTTPS enforced
+**Architecture**
+- Cloudflare Pages Functions ✓
+- 10-database sharding ✓ (partially integrated)
+- Multi-provider storage ✓ (defined, implementation incomplete)
+- Authentication ✓
+- Session management ✓
+- Reader system ⚠️ (exists, needs finalization)
+- 2FA ⚠️ (backend partial, frontend missing)
 
----
+**Deployment**
+- GitHub integration ready ✓
+- Requires Cloudflare Dashboard configuration (10 D1 databases, 2 KV namespaces)
+- See CLOUDFLARE_SETUP.md for complete instructions
 
-### Performance Optimization
+### 📋 QUICK START FOR NEXT SESSION
 
-#### Performance Mode Toggle
-- ⚡ Performance Mode: No animations, no shadows, minimal styling
-- ✨ Visual Mode: Full features, animations, gradients
+1. **Immediate (high-impact):**
+   - Migrate 12 API files to DatabaseRouter pattern
+   - Complete 2FA implementation
+   - Verify storage provider implementations
 
-**File:** `frontend/scripts/performance-mode.js`
+2. **High Priority:**
+   - Test cascading storage failover
+   - Implement frontend 2FA toggle
+   - Complete EPUB/PDF reader setup
 
-#### Text-Only Reader Fallback
-- For extremely low-end devices (Nokia-level)
-- No EPUB.js or PDF.js required
-- Plain text rendering with chapters
-- Touch swipe navigation
+3. **Lower Priority:**
+   - Performance optimization
+   - UI/UX enhancements
+   - Monitoring and logging
 
-**File:** `frontend/scripts/text-only-reader.js`
+### 📚 RESOURCES
 
-#### Service Worker (Offline Caching)
-- Static assets cached on install
-- Book content cached for offline reading
-- API responses cached with stale-while-revalidate
-- Background sync for reading progress
+- **EMERGENCY_PROMPT.txt** - Remaining tasks with detailed instructions
+- **CODEBASE_EXPLANATION.txt** - Complete architecture guide for AI assistants
+- **CLOUDFLARE_SETUP.md** - Deployment instructions
+- **db-router.ts** - Database sharding implementation
+- **create-zip.sh** - Archive the project for sharing
 
-**File:** `frontend/sw.js`
+### 🚀 DEPLOYMENT CHECKLIST
 
-#### Bundle Size Targets
-- Target: <200KB per feature
-- Lazy loading for images
-- Virtual scrolling for large libraries
-- Debounced event handlers
-
----
-
-### Database Changes
-
-#### Consolidated Schema
-Old migration files merged into single D1-compatible schema:
-- `migrations/schema.sql` - Complete database structure
-
-#### New Tables
-- `storage_providers` - Provider health tracking
-- Added `two_factor_enabled`, `two_factor_hash` to settings
-- Added `performance_mode` to settings
-
-#### Removed
-- Old migration files (0001_init.sql, 0002_add_features.sql)
-
----
-
-### Documentation Updates
-
-#### CLOUDFLARE_SETUP.md
-- Updated for 10 storage providers
-- D1 SQL schema included
-- KV namespace setup
-- Secret management guide
-
-#### This File (CHANGES.md)
-- Complete changelog with quirks/humor
-- Bloat removal justifications
-- Compliance reasons
-
----
-
-### Files Modified
-
-| File | Purpose |
-|------|---------|
-| `functions/storage-proxy.ts` | 10 storage providers with failover |
-| `functions/api/ai/recommend.ts` | Backend recommendations |
-| `functions/api/ai/analytics.ts` | Reading statistics & XP |
-| `functions/api/ai/summary.ts` | Chapter summaries |
-| `functions/api/ai/genre.ts` | User-initiated genre suggestions |
-| `functions/api/security/two-factor.ts` | Optional 2FA |
-| `frontend/scripts/ai-features.js` | Client wrapper for backend AI |
-| `frontend/scripts/performance-mode.js` | Performance/Visual toggle |
-| `frontend/scripts/text-only-reader.js` | Minimal reader fallback |
-| `frontend/sw.js` | Service Worker for offline |
-| `frontend/dashboard.html` | Added SW registration |
-| `migrations/schema.sql` | Consolidated D1 schema |
-| `wrangler.toml` | Updated secrets documentation |
-| `CLOUDFLARE_SETUP.md` | Complete setup guide |
+Before deploying:
+- [ ] All 16 API files use DatabaseRouter
+- [ ] All 10 storage providers working
+- [ ] 2FA frontend UI implemented
+- [ ] Reader fallback chain tested
+- [ ] TypeScript diagnostics resolved
+- [ ] 10 D1 databases created
+- [ ] 2 KV namespaces created
+- [ ] All environment variables configured
+- [ ] Schema migrations run on all 10 databases
 
 ---
 
-### Bloat Removed
+## Previous Session Summary
 
-1. **Auto-genre on upload** - Inaccurate, annoying, removed entirely
-2. **Client-side AI processing** - Moved to backend for accuracy
-3. **Duplicate DOM manipulation** - Using safe helpers only
-4. **Unused analytics tracking** - Removed dead code
-5. **Heavy frontend logic** - Backend handles computation
-
----
-
-### Quirks & Notes
-
-🐛 **The Mega.nz Situation**: Mega requires complex client-side encryption. Current implementation is simplified. For full Mega support, a proper library would be needed. Consider it "best effort" until then.
-
-📱 **Performance Mode Auto-Detection**: The app will politely suggest Performance Mode if it detects a potato device. Users can dismiss this forever if they're brave.
-
-⚡ **GitHub 4GB Limit**: The app tracks total GitHub storage usage to prevent hitting the limit. If you manage to fill 4GB with books, congratulations on your reading habits!
-
-🔐 **2FA Password**: This is separate from your main login password. Yes, you can have two different passwords. No, we won't judge your security paranoia.
+### Version 2.0.0 Completed Features
+- Storage providers expanded (4 → 10)
+- Cascading failover logic
+- Backend-only AI features
+- Optional 2FA protection
+- Performance mode foundations
+- Security audit fixes
+- Reader implementations
 
 ---
 
-### Compliance Checklist
-
-- [x] Cloudflare Pages compatible
-- [x] Static frontend only
-- [x] /functions for heavy computation
-- [x] WASM only for animations (none currently used)
-- [x] Secrets in Cloudflare Dashboard only
-- [x] D1 database compatible
-- [x] KV namespaces for caching/sessions
-- [x] HTTPS enforced
-- [x] Input sanitization
-- [x] Secure session management
-- [x] Performance optimized for low-end devices
-
----
-
-### Next Steps (Future Improvements)
-
-1. Implement proper Mega.nz encryption
-2. Add book cover generation from EPUB
-3. Implement TOTP-based 2FA (optional upgrade)
-4. Add reading statistics visualization
-5. Implement cloud bookmark sync
-
----
-
-*Built with spite and determination. May your books never be lost to the void.*
+**Last Updated:** December 19, 2024, 5:50 AM UTC
+**Status:** Awaiting completion of database migration and storage verification
+**Next Action:** Complete EMERGENCY_PROMPT.txt tasks in priority order

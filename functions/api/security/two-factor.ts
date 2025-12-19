@@ -3,8 +3,19 @@
  * Optional 2FA to lock all books under user-defined password
  */
 
+import { createDatabaseRouter } from '../../db-router';
+
 interface Env {
-  DB: D1Database;
+  DB_1?: D1Database;
+  DB_2?: D1Database;
+  DB_3?: D1Database;
+  DB_4?: D1Database;
+  DB_5?: D1Database;
+  DB_6?: D1Database;
+  DB_7?: D1Database;
+  DB_8?: D1Database;
+  DB_9?: D1Database;
+  DB_10?: D1Database;
   KV_SESSIONS: KVNamespace;
   KV_CACHE: KVNamespace;
 }
@@ -39,7 +50,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { env } = context;
 
   try {
-    const settings = await env.DB.prepare(
+    const router = createDatabaseRouter(env);
+    const db = router.getAllDatabases()[0]; // Settings stored in DB_1
+    
+    const settings = await db.prepare(
       'SELECT * FROM settings WHERE id = 1'
     ).first() as { two_factor_enabled?: number } | null;
 
@@ -74,12 +88,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     const { action, password, newPassword } = body;
 
+    const router = createDatabaseRouter(env);
+    const db = router.getAllDatabases()[0]; // Settings stored in DB_1
+
     // Get current session token
     const cookies = request.headers.get('Cookie') || '';
     const sessionToken = cookies
       .split(';')
-      .map(c => c.trim())
-      .find(c => c.startsWith('NMLR_SESSION='))
+      .map((c: string) => c.trim())
+      .find((c: string) => c.startsWith('NMLR_SESSION='))
       ?.split('=')[1];
 
     if (!sessionToken) {
