@@ -304,6 +304,22 @@
                         <option value="20">Extra Large (20px)</option>
                     </select>
                 </div>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border-color);">
+                
+                <h4 style="margin-bottom: 12px; color: var(--text-primary);">Security</h4>
+                <div class="form-group">
+                    <label class="form-label">Two-Factor Authentication</label>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input type="checkbox" id="settings-twofa" style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="color: var(--text-secondary); font-size: 0.9em;">Enable 2FA with security code</span>
+                    </div>
+                </div>
+                <div class="form-group" id="twofa-password-group" style="display: none;">
+                    <label class="form-label">Security Code (4+ characters)</label>
+                    <input type="password" class="form-input" id="settings-twofa-password" placeholder="Enter security code">
+                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">You'll need this code to unlock your library on next login</small>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="settings-cancel">Cancel</button>
