@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 import { createDatabaseRouter } from '../../db-router';
 
 interface Env {

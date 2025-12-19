@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Update Settings API
  * PUT /api/settings/update - Update user settings

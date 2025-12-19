@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Genre Suggestion API - Backend-only, User-Initiated
  * POST /api/ai/genre - Suggest genres for a book (user must confirm)

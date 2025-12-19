@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * AI Recommendations API - Backend-only
  * POST /api/ai/recommend - Get book recommendations based on reading history

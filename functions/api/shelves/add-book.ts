@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Add Book to Shelf API
  * POST /api/shelves/add-book - Add book to shelf

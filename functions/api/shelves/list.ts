@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * List Shelves API
  * GET /api/shelves/list - Returns all shelves with book IDs

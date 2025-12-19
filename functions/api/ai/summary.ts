@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Chapter Summary API - Backend-only
  * POST /api/ai/summary - Extract chapter summaries from book content

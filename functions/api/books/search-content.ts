@@ -1,4 +1,5 @@
-
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Full-Text Search API
  * POST /api/books/search-content - Search inside book contents

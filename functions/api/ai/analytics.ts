@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Reading Analytics API - Backend-only
  * GET /api/ai/analytics - Get reading statistics and insights

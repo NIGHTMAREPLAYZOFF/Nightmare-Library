@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Reader Format Detection & Fallback Handler
  * Automatically selects best reader: EPUB → PDF → Text-Only

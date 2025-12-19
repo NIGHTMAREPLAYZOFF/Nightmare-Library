@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Create Shelf API
  * POST /api/shelves/create - Create new shelf

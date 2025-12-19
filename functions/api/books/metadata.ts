@@ -1,4 +1,5 @@
-
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * EPUB Metadata Extraction API
  * POST /api/books/metadata - Extract metadata from EPUB

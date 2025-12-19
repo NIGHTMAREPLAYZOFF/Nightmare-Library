@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Two-Factor Authentication API
  * Optional 2FA to lock all books under user-defined password
