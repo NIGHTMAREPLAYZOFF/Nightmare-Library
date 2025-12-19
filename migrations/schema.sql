@@ -154,3 +154,22 @@ VALUES
     ('b2', 1, 0),
     ('mega', 1, 0),
     ('github', 1, 0);
+
+-- ============================================
+-- PROVIDER MAPPING (which provider has which file)
+-- ============================================
+CREATE TABLE IF NOT EXISTS provider_mapping (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    book_id TEXT NOT NULL,
+    provider_type TEXT NOT NULL,
+    storage_id TEXT NOT NULL,
+    is_primary INTEGER DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    last_verified INTEGER,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+    UNIQUE(book_id, provider_type, storage_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_provider_mapping_book ON provider_mapping(book_id);
+CREATE INDEX IF NOT EXISTS idx_provider_mapping_provider ON provider_mapping(provider_type);
+CREATE INDEX IF NOT EXISTS idx_provider_mapping_primary ON provider_mapping(is_primary);
