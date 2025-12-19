@@ -39,9 +39,30 @@ This setup uses a cascading storage system with **10 free providers**:
 - GitHub account
 - At least one storage provider account
 
-## 1. Create Cloudflare Resources
+## 1. Create & Initialize Database
 
-### Create D1 Database
+### Initialize SQLite Database (Local)
+
+For local development and long-term deployment, use SQLite instead of Cloudflare D1 to avoid the 500 MB database size limit:
+
+```bash
+# Install sqlite3 if not already installed
+# macOS: brew install sqlite3
+# Ubuntu/Debian: sudo apt-get install sqlite3
+# Windows: Download from https://sqlite.org/download.html
+
+# Initialize the database from schema
+npm run db:migrate
+
+# Or manually:
+sqlite3 nightmare-library.db < ./migrations/schema.sql
+```
+
+This creates a `nightmare-library.db` file locally containing all tables and indexes.
+
+### Optional: Cloudflare D1 (If Using Cloudflare Pages)
+
+If deploying to Cloudflare Pages and want D1 support, create a D1 database:
 
 ```bash
 npx wrangler d1 create nightmare-library-db
@@ -56,11 +77,13 @@ database_name = "nightmare-library-db"
 database_id = "your-database-id-here"
 ```
 
-### Initialize Database Schema
+Then initialize it:
 
 ```bash
 npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/schema.sql
 ```
+
+**Note:** D1 has a 500 MB single-database limit. For larger libraries, use local SQLite or split across multiple D1 databases.
 
 ### Create KV Namespaces
 
@@ -276,12 +299,20 @@ Yandex → Koofr → B2 → Mega → GitHub (4GB max)
 
 ## Testing Locally
 
+### 1. Initialize Database
+
 ```bash
-# Start dev server
+# Set up SQLite database
+npm run db:migrate
+```
+
+### 2. Start Dev Server
+
+```bash
 npm run dev
 ```
 
-Create `.dev.vars` with your secrets:
+### 3. Create `.dev.vars` with Secrets
 
 ```
 PASSWORD=your-test-password
@@ -293,8 +324,14 @@ GITHUB_OWNER=...
 
 ## Database Schema
 
-The database uses a single consolidated schema file:
+The database uses a single consolidated schema file that works with both SQLite and D1:
 
+**For SQLite (Recommended):**
+```bash
+npm run db:migrate
+```
+
+**For D1 (Cloudflare Pages):**
 ```bash
 npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/schema.sql
 ```
@@ -352,6 +389,20 @@ npx wrangler pages deployment tail
 4. Review Functions logs
 
 ### Database Migration Fails
+
+**For SQLite:**
+```bash
+# Check database status
+sqlite3 nightmare-library.db ".tables"
+
+# Re-run migration
+npm run db:migrate
+
+# Or manually:
+sqlite3 nightmare-library.db < ./migrations/schema.sql
+```
+
+**For D1 (if using Cloudflare Pages):**
 ```bash
 npx wrangler d1 info nightmare-library-db
 npx wrangler d1 execute nightmare-library-db --remote --file=./migrations/schema.sql

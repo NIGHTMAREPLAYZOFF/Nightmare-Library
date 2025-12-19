@@ -7,7 +7,7 @@
     "dev": "wrangler pages dev . --compatibility-date=2024-01-01",
     "build": "echo 'No build step required for vanilla frontend'",
     "deploy": "wrangler pages deploy .",
-    "db:migrate": "wrangler d1 execute nightmare-library-db --remote --file=./migrations/0001_init.sql",
+    "db:migrate": "sqlite3 nightmare-library.db < ./migrations/schema.sql",
     "replit:dev": "cd replit-version && npm run dev",
     "replit:start": "cd replit-version && npm start"
   },
@@ -17,7 +17,7 @@
     "wrangler": "^3.22.4"
   },
   "dependencies": {
-    "hono": "^3.12.6"
+    "hono": "^4.6.13"
   },
   "keywords": ["library", "epub", "pdf", "cloudflare-pages", "digital-library"],
   "author": "",
