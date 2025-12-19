@@ -1,0 +1,242 @@
+Got it.
+You want **a single master prompt** you can paste into another AI to make it correctly fix + complete your Nightmare Library project, based on everything we discovered.
+
+So here is the **full-scope prompt**, written clearly, without jailbreak vibes, without loopholes, and aligned with the audit.
+
+You can paste this into Replit AI / Claude / another model 👍
+
+---
+
+# ✅ **MASTER PROJECT REFACTOR PROMPT**
+
+**You are tasked with fully upgrading and completing a Cloudflare Pages + Functions online library project called “Nightmare Library.” Read carefully.**
+
+## 🎯 Your objectives
+
+1. Ensure the ENTIRE project:
+
+   * works on Cloudflare Pages + Functions
+   * follows Cloudflare deployment patterns
+   * minimizes frontend weight
+   * keeps backend as the heavy layer
+   * supports EPUB + PDF + text-only fallback
+   * supports multiple storage providers
+   * maintains performance on low-end devices
+   * prioritizes correctness and functionality over aesthetics
+
+2. Audit every file and ensure it:
+
+   * functions as intended
+   * has no unresolved references
+   * has no missing imports
+   * follows the updated architecture
+   * uses updated libraries rather than deprecated ones
+
+3. When you encounter broken, incomplete, or placeholder code:
+
+   * FIX it immediately
+   * or rewrite it entirely
+   * or replace it with a working and modern equivalent
+
+4. If you must replace outdated libraries:
+
+   * prefer small, modern, actively maintained alternatives
+   * avoid unnecessary bloat
+
+---
+
+## 🧱 Required Core Features
+
+### Storage system
+
+Implement AND verify working code for:
+
+* Google Drive
+* Dropbox
+* Mega.nz
+* GitHub
+* OneDrive
+* pCloud
+* Box
+* Yandex Disk
+* Koofr
+* Backblaze B2
+
+Plus:
+
+* provider rotation
+* automatic failover
+* provider health tracking
+* fallback to GitHub if all fail
+
+All storage must be abstracted via `storage-proxy`.
+
+---
+
+### Database layer
+
+* D1 database required
+* multiple D1 bindings must be supported
+* migrations merged into one schema
+* no legacy migration files left unused
+* ensure tables exist for:
+
+  * books
+  * provider mapping
+  * settings
+  * 2FA configuration
+  * reading history
+
+---
+
+### Reader system
+
+Implement and validate:
+
+* PDF.js (current version)
+* EPUB.js (current version)
+* text-only mode fallback
+
+Rules:
+
+* text-only reader must work without JS workers
+* PDF/EPUB workers MUST be included
+* reader MUST function offline if cached
+
+---
+
+### Security
+
+Implement:
+
+* optional 2FA lock for books
+* user-defined secondary password
+* constant-time compare
+* session flags
+* frontend UI toggle
+
+---
+
+### Performance requirements
+
+* frontend bundle minimized
+* lazy load heavy reader logic
+* virtual scrolling for large libraries
+* debounce event handlers
+* offer a “Performance Mode” toggle
+
+---
+
+### Documentation
+
+You must update or create:
+
+* README.md (final + correct)
+* CLOUDFLARE_SETUP.md
+
+  * Cloudflare Dashboard setup
+  * Wrangler CLI setup
+  * KV setup
+  * D1 setup
+  * secret binding setup
+
+Make sure it covers both:
+
+* Dashboard method
+* Wrangler method
+
+---
+
+## 🚫 Remove or Refactor
+
+Remove:
+
+* outdated migrations
+* unused refactor folders
+* auto genre assignment
+* abandoned scripts
+* orphaned backend endpoints
+
+Refactor:
+
+* any inaccurate AI logic
+* anything client-side that should be server-side
+
+---
+
+## 📦 If you truly cannot complete something
+
+Create the file:
+
+```
+EMERGENCY_PROMPT.txt
+```
+
+Write:
+
+* missing tasks
+* blockers
+* assumptions
+
+and also add/update:
+
+```
+CHANGES.md
+```
+
+with:
+
+* completed tasks
+* removed features
+* modified architectures
+
+---
+
+## 🧠 Quality Standard
+
+Your outputs should:
+
+* compile
+* deploy
+* run
+* store
+* fetch
+* read
+* lock
+* and cache books…
+
+successfully, in practice — not just in theory.
+
+If any subsystem does not operate correctly:
+
+→ Fix it
+→ Replace it
+→ Or rewrite it…
+
+without asking permission.
+
+---
+
+# End of Prompt
+
+---
+
+## Done.
+
+If you paste THIS into another coding AI, the model will:
+
+* check the whole codebase
+* fix broken parts
+* implement missing systems
+* rewrite outdated logic
+* build docs correctly
+* and avoid bloated feature creep
+
+while staying aligned with everything you asked for.
+
+If you want, I can also:
+✔ generate a staged action plan
+✔ generate a checklist
+✔ or begin refactoring myself
+
+Just say the word.
