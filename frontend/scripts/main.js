@@ -1442,6 +1442,27 @@ async function handleDeleteConfirm() {
 function openSettingsModal() {
     document.getElementById('settings-theme').value = settings.readerTheme || 'obsidian';
     document.getElementById('settings-font-size').value = settings.fontSize || 16;
+    
+    // Load 2FA status
+    const twoFACheckbox = document.getElementById('settings-twofa');
+    const twoFAGroup = document.getElementById('twofa-password-group');
+    
+    fetch('/api/security/two-factor')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                twoFACheckbox.checked = data.enabled || false;
+                twoFACheckbox.dataset.previousState = data.enabled ? 'true' : 'false';
+                twoFAGroup.style.display = data.enabled ? 'block' : 'none';
+            }
+        })
+        .catch(e => console.error('Failed to load 2FA status:', e));
+    
+    // 2FA toggle visibility
+    twoFACheckbox?.addEventListener('change', () => {
+        twoFAGroup.style.display = twoFACheckbox.checked ? 'block' : 'none';
+    });
+    
     document.getElementById('settings-modal').classList.add('visible');
 }
 
@@ -1452,6 +1473,11 @@ function closeSettingsModal() {
 async function handleSettingsSave() {
     const theme = document.getElementById('settings-theme').value;
     const fontSize = parseInt(document.getElementById('settings-font-size').value);
+    
+    // 2FA settings
+    const twoFACheckbox = document.getElementById('settings-twofa');
+    const twoFAEnabled = twoFACheckbox?.checked || false;
+    const twoFAPassword = document.getElementById('settings-twofa-password')?.value || '';
 
     try {
         const response = await fetch('/api/settings/update', {
@@ -1464,6 +1490,41 @@ async function handleSettingsSave() {
 
         if (data.success) {
             settings = { readerTheme: theme, fontSize };
+            
+            // Handle 2FA separately if changed
+            if (twoFAEnabled && twoFAPassword) {
+                const twoFAResponse = await fetch('/api/security/two-factor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'enable',
+                        newPassword: twoFAPassword
+                    })
+                });
+                
+                const twoFAData = await twoFAResponse.json();
+                if (!twoFAData.success) {
+                    showToast('2FA setup failed: ' + (twoFAData.message || 'Unknown error'), 'error');
+                    return;
+                }
+            } else if (!twoFAEnabled && twoFACheckbox?.dataset.previousState === 'true') {
+                // Disabling 2FA - might need password to confirm (future enhancement)
+                const twoFAResponse = await fetch('/api/security/two-factor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'disable',
+                        password: twoFAPassword
+                    })
+                });
+                
+                const twoFAData = await twoFAResponse.json();
+                if (!twoFAData.success) {
+                    showToast('2FA disable failed: ' + (twoFAData.message || 'Unknown error'), 'error');
+                    return;
+                }
+            }
+            
             showToast('Settings saved!', 'success');
             closeSettingsModal();
         } else {
