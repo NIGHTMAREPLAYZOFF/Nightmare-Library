@@ -1,4 +1,5 @@
-
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Authentication Handler with Security Measures
  * POST /api/auth - Login with password
@@ -27,6 +28,13 @@ interface LoginAttempt {
   count: number;
   firstAttempt: number;
   lockedUntil?: number;
+}
+
+interface SessionPayload {
+  createdAt: number;
+  expiresAt: number;
+  ip: string;
+  userAgent: string;
 }
 
 const MAX_ATTEMPTS = 5;
@@ -128,12 +136,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
 
     // Store session with metadata
-    await env.KV_SESSIONS.put(sessionToken, JSON.stringify({
+    const sessionPayload: SessionPayload = {
       createdAt: Date.now(),
       expiresAt,
       ip: clientIP,
       userAgent: request.headers.get('User-Agent') || 'unknown'
-    }), {
+    };
+    await env.KV_SESSIONS.put(sessionToken, JSON.stringify(sessionPayload), {
       expirationTtl: 86400 // 24 hours in seconds
     });
 
@@ -177,5 +186,5 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 async function generateSecureToken(): Promise<string> {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(array, (byte: number) => byte.toString(16).padStart(2, '0')).join('');
 }

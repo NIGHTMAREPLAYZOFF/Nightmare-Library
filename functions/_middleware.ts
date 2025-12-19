@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="webworker" />
 /**
  * Cloudflare Pages Middleware
  * Handles authentication for protected routes
@@ -16,6 +18,13 @@ interface Env {
   DB_8?: D1Database;
   DB_9?: D1Database;
   DB_10?: D1Database;
+}
+
+interface SessionData {
+  createdAt: number;
+  expiresAt: number;
+  ip: string;
+  userAgent: string;
 }
 
 // Routes that don't require authentication
@@ -72,7 +81,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
 
       // Parse session and validate metadata
-      const session = JSON.parse(sessionData);
+      const session = JSON.parse(sessionData) as SessionData;
       const clientIP = request.headers.get('CF-Connecting-IP') || 
                        request.headers.get('X-Forwarded-For') || 
                        'unknown';

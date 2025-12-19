@@ -1,3 +1,4 @@
+/// <reference lib="webworker" />
 /**
  * Database Router for Sharding
  * Distributes queries across 10 Cloudflare D1 databases
