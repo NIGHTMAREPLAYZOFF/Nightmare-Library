@@ -292,40 +292,6 @@ MEGA_FOLDER_ID = (optional folder ID)
 
 ---
 
-## 8️⃣ Google Drive (Medium - 15GB free, no credit card!)
-
-**Setup time: 5 minutes**
-
-Unlike other Google services, Google Drive API **does NOT require a credit card**.
-
-1. Go to: https://console.cloud.google.com/
-2. **Select Project** → **New Project** → Name it → Create
-3. Left sidebar → **APIs & Services** → **Library**
-4. Search **Google Drive API** → **Enable**
-5. **APIs & Services** → **OAuth consent screen**
-   - User Type: **External**
-   - App name: `Nightmare Library`
-   - User support email: your email
-   - Developer contact: your email
-   - **Save and Continue**
-6. **APIs & Services** → **Credentials**
-   - **+ Create Credentials** → **OAuth client ID**
-   - Application type: **Web application**
-   - Authorized redirect URIs: `https://yourapp.pages.dev/api/auth/callback` (adjust to your domain)
-   - **Create**
-7. Download the JSON file or copy **Client ID** and **Client Secret**
-8. Get access token via OAuth flow (the system will handle this)
-
-In **Cloudflare Pages** → **Environment variables** → **Production**:
-```
-GDRIVE_ACCESS_TOKEN = ya29_xxxxx...
-GDRIVE_FOLDER_ID    = (optional folder ID)
-```
-
-✅ Done!
-
----
-
 ## 🔄 How Storage Failover Works
 
 When you upload a book:
@@ -337,8 +303,7 @@ When you upload a book:
 5. If fails → Try **Yandex**
 6. If fails → Try **Koofr**
 7. If fails → Try **Mega**
-8. If fails → Try **Google Drive**
-9. If fails → Use **GitHub** (guaranteed fallback)
+8. If fails → Use **GitHub** (guaranteed fallback)
 
 If any provider fails, the system automatically tries the next one. ✅
 
@@ -353,7 +318,7 @@ If any provider fails, the system automatically tries the next one. ✅
 
 **Example:**
 - Dropbox: Limited to app folder only
-- Google Drive: Limited to specific folder
+- Mega: Dedicated email, strong password
 - GitHub: Read/write repo scope only
 
 ---
