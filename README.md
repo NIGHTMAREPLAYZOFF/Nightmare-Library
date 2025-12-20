@@ -292,6 +292,56 @@ MEGA_FOLDER_ID = (optional folder ID)
 
 ---
 
+## 8️⃣ Backblaze B2 (Medium - 10GB free)
+
+**Setup time: 3 minutes**
+
+Backblaze B2 is a cloud storage service (NOT self-hosted) with an S3-compatible API.
+
+1. Go to: https://www.backblaze.com/b2/
+2. Click **Sign Up** → Create account (no credit card needed)
+3. Create a bucket:
+   - Dashboard → **Buckets** → **Create a bucket**
+   - Type: **Private**
+   - Copy the **Bucket ID**
+4. Generate application key:
+   - **Account Settings** → **App Keys**
+   - Click **Add Application Key**
+   - Copy **Key ID** and **Application Key**
+
+In **Cloudflare Pages** → **Environment variables** → **Production**:
+```
+B2_KEY_ID         = 0015abc123xxxxx
+B2_APPLICATION_KEY = 0015abc123xxxxx
+B2_BUCKET_ID      = abcdef123456...
+B2_BUCKET_NAME    = your-bucket-name
+```
+
+✅ Done!
+
+---
+
+## 9️⃣ CloudGate (Medium - 100GB free)
+
+**Setup time: 2 minutes**
+
+CloudGate is a simple cloud storage service with 100GB free and no credit card required.
+
+1. Go to: https://www.cloudgate-app.com/
+2. Click **Sign Up** → Create account
+3. Once logged in, get your API token from Settings
+4. Copy your email and API token
+
+In **Cloudflare Pages** → **Environment variables** → **Production**:
+```
+CLOUDGATE_EMAIL = your-email@example.com
+CLOUDGATE_TOKEN = your-api-token
+```
+
+✅ Done!
+
+---
+
 ## 🔄 How Storage Failover Works
 
 When you upload a book:
@@ -303,7 +353,9 @@ When you upload a book:
 5. If fails → Try **Yandex**
 6. If fails → Try **Koofr**
 7. If fails → Try **Mega**
-8. If fails → Use **GitHub** (guaranteed fallback)
+8. If fails → Try **Backblaze B2**
+9. If fails → Try **CloudGate**
+10. If fails → Use **GitHub** (guaranteed fallback)
 
 If any provider fails, the system automatically tries the next one. ✅
 
