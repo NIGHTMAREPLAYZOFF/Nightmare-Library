@@ -123,8 +123,11 @@ async function loadBook() {
         }
 
         const bookData = data.book;
-        elements.bookTitle.textContent = bookData.title;
-        document.title = `${bookData.title} - Nightmare Library`;
+        
+        // Sanitize title to prevent XSS
+        const safeTitle = escapeHtml(bookData.title || 'Unknown');
+        elements.bookTitle.textContent = safeTitle;
+        document.title = `${safeTitle} - Nightmare Library`;
         fileType = bookData.file_type;
 
         // Load saved progress

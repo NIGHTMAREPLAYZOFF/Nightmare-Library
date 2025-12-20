@@ -166,6 +166,8 @@ Your GitHub storage works. Want backups? Add these providers in this order (easi
 4. Go to **Permissions** tab → Check `files.content.write` + `files.content.read`
 5. Go to **Settings** tab → **Generate token** → Copy it
 
+**API Key Path**: https://www.dropbox.com/developers/apps → Your app → Settings → Generate access token
+
 In **Cloudflare Pages** → **Environment variables** → **Production**:
 ```
 DROPBOX_ACCESS_TOKEN = sl_xxxxx...
@@ -187,6 +189,8 @@ DROPBOX_ACCESS_TOKEN = sl_xxxxx...
    - Sign in → Click **Access token**
    - Copy the token shown
 
+**API Key Path**: https://developer.microsoft.com/graph/graph-explorer → Sign in with Microsoft account → Access token (shown in response headers)
+
 In **Cloudflare Pages** → **Environment variables** → **Production**:
 ```
 ONEDRIVE_ACCESS_TOKEN = EwAWA8l6BAAURSN1OzQ...
@@ -203,6 +207,8 @@ ONEDRIVE_ACCESS_TOKEN = EwAWA8l6BAAURSN1OzQ...
 1. Go to: https://myaccount.pcloud.com/
 2. Settings → Apps & security → Authorize an app
 3. Generate access token → Copy it
+
+**API Key Path**: https://myaccount.pcloud.com/settings → Apps & security → Generate token
 
 In **Cloudflare Pages** → **Environment variables** → **Production**:
 ```
@@ -223,6 +229,8 @@ PCLOUD_ACCESS_TOKEN = xxxxx...
 4. Get your **Client ID** and **Client Secret**
 5. Use OAuth to get access token
 
+**API Key Path**: https://app.box.com/developers/console → Create New App → OAuth 2.0 → Configuration → Get access token via OAuth flow
+
 In **Cloudflare Pages** → **Environment variables** → **Production**:
 ```
 BOX_ACCESS_TOKEN = xxxxx...
@@ -242,6 +250,8 @@ BOX_FOLDER_ID    = 0 (optional, defaults to root)
 3. Get **OAuth token** from your app
 4. Copy access token
 
+**API Key Path**: https://oauth.yandex.com/ → Create new app → Get access token
+
 In **Cloudflare Pages** → **Environment variables** → **Production**:
 ```
 YANDEX_ACCESS_TOKEN = AQAxxxxx...
@@ -259,6 +269,8 @@ YANDEX_PATH         = NightmareLibrary (optional folder path)
 1. Go to: https://app.koofr.eu/
 2. Settings → Integrations
 3. Create API token → Copy it
+
+**API Key Path**: https://app.koofr.eu/ → Settings → Integrations → Create token
 
 In **Cloudflare Pages** → **Environment variables** → **Production**:
 ```
@@ -309,6 +321,8 @@ Backblaze B2 is a cloud storage service (NOT self-hosted) with an S3-compatible 
    - Click **Add Application Key**
    - Copy **Key ID** and **Application Key**
 
+**API Key Path**: https://www.backblaze.com/b2/ → Account Settings → App Keys → Add Application Key
+
 In **Cloudflare Pages** → **Environment variables** → **Production**:
 ```
 B2_KEY_ID         = 0015abc123xxxxx
@@ -331,6 +345,8 @@ CloudGate is a simple cloud storage service with 100GB free and no credit card r
 2. Click **Sign Up** → Create account
 3. Once logged in, get your API token from Settings
 4. Copy your email and API token
+
+**API Key Path**: https://www.cloudgate-app.com/ → Sign Up → Once logged in → Settings → API token
 
 In **Cloudflare Pages** → **Environment variables** → **Production**:
 ```
