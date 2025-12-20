@@ -7,24 +7,37 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "./"
 
 # ============================================
-# D1 Database Binding
+# D1 Database Bindings (DO NOT EDIT HERE)
 # ============================================
-# Configure these in Cloudflare Pages Settings:
+# Configure these in Cloudflare Pages Dashboard:
 # Pages > nightmare-library > Settings > Functions > D1 database bindings
+# You need bindings for: DB_1 through DB_10
 #
-# You need 10 databases: nightmare-library-db-1 through nightmare-library-db-10
+# To create 10 D1 databases in Cloudflare Dashboard:
+# 1. Go to D1 Databases
+# 2. Click "Create database" 10 times
+# 3. Name them: nightmare-library-db-1, nightmare-library-db-2, ..., nightmare-library-db-10
+# 4. Copy the Database ID for each
+# 5. Add D1 bindings in Cloudflare Pages pointing to each database
+
 [[d1_databases]]
 binding = "DB_1"
 database_name = "nightmare-library-db-1"
 database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 
 # ============================================
-# KV Namespace Bindings
+# KV Namespace Bindings (DO NOT EDIT HERE)
 # ============================================
-# Configure these in Cloudflare Pages Settings:
+# Configure these in Cloudflare Pages Dashboard:
 # Pages > nightmare-library > Settings > Functions > KV namespace bindings
 #
-# You need 3 KV namespaces: KV_SESSIONS, KV_CACHE, KV_RATE_LIMIT
+# To create KV namespaces in Cloudflare Dashboard:
+# 1. Go to KV Namespaces
+# 2. Click "Create namespace" 3 times
+# 3. Name them: KV_SESSIONS, KV_CACHE, KV_RATE_LIMIT
+# 4. Copy Namespace ID and Preview ID for each
+# 5. Add KV bindings in Cloudflare Pages
+
 [[kv_namespaces]]
 binding = "KV_SESSIONS"
 id = "REPLACE_WITH_YOUR_KV_SESSIONS_ID"
@@ -47,28 +60,29 @@ preview_id = "REPLACE_WITH_YOUR_KV_RATE_LIMIT_PREVIEW_ID"
 ENVIRONMENT = "production"
 
 # ============================================
-# SECRETS CONFIGURATION
+# SECRETS (DO NOT PUT VALUES HERE!)
 # ============================================
-# DO NOT put actual secret values here!
-# DO NOT commit secrets to version control!
+# ALL SECRETS MUST BE SET IN CLOUDFLARE PAGES DASHBOARD
+# DO NOT COMMIT SECRETS TO GIT
 #
-# Set all secrets in Cloudflare Pages Dashboard:
-# Pages > nightmare-library > Settings > Environment variables
+# Set in: Cloudflare Pages > nightmare-library > Settings > Environment variables > Production
 #
-# Required secrets:
-#   PASSWORD       - Your login password (min 8 chars)
-#   JWT_SECRET     - Random 64-char string: openssl rand -hex 32
+# REQUIRED SECRETS:
+# ================
+# PASSWORD          - Your login password (min 8 characters)
+# JWT_SECRET        - Random 64-char string (run: openssl rand -hex 32)
+# GITHUB_TOKEN      - Personal Access Token from GitHub
+# GITHUB_OWNER      - Your GitHub username
 #
-# Storage provider secrets (set at least GITHUB_TOKEN):
-#   GDRIVE_ACCESS_TOKEN, GDRIVE_FOLDER_ID
-#   DROPBOX_ACCESS_TOKEN, DROPBOX_PATH
-#   ONEDRIVE_ACCESS_TOKEN, ONEDRIVE_FOLDER_ID
-#   PCLOUD_ACCESS_TOKEN, PCLOUD_FOLDER_ID
-#   BOX_ACCESS_TOKEN, BOX_FOLDER_ID
-#   YANDEX_ACCESS_TOKEN, YANDEX_PATH
-#   KOOFR_ACCESS_TOKEN, KOOFR_MOUNT_ID, KOOFR_PATH
-#   B2_KEY_ID, B2_APPLICATION_KEY, B2_BUCKET_ID, B2_BUCKET_NAME
-#   MEGA_EMAIL, MEGA_PASSWORD, MEGA_FOLDER_ID
-#   GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO
+# OPTIONAL STORAGE PROVIDER SECRETS (no credit card required for any):
+# ====================================================================
+# DROPBOX_ACCESS_TOKEN, DROPBOX_PATH
+# ONEDRIVE_ACCESS_TOKEN, ONEDRIVE_FOLDER_ID
+# PCLOUD_ACCESS_TOKEN, PCLOUD_FOLDER_ID
+# BOX_ACCESS_TOKEN, BOX_FOLDER_ID
+# YANDEX_ACCESS_TOKEN, YANDEX_PATH
+# KOOFR_ACCESS_TOKEN, KOOFR_MOUNT_ID, KOOFR_PATH
+# MEGA_EMAIL, MEGA_PASSWORD, MEGA_FOLDER_ID
+# GDRIVE_ACCESS_TOKEN, GDRIVE_FOLDER_ID
 #
-# See CLOUDFLARE_SETUP.md for detailed instructions on obtaining each secret.
+# See CLOUDFLARE_SETUP.md for detailed setup instructions for each provider.

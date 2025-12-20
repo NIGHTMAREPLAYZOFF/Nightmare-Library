@@ -1,46 +1,63 @@
 # Nightmare Library: Cloudflare Pages Deployment Guide
 
-## What You're Building
+**Nightmare Library** is a single-user digital library for EPUB/PDF books deployed on Cloudflare Pages with authentication, database sharding, and cascading cloud storage backup.
 
-Nightmare Library is a single-user digital library for EPUB/PDF books deployed on **Cloudflare Pages** with:
+---
+
+## ✨ What You Get
+
 - **Database Sharding**: 10 D1 databases (5GB total storage)
-- **Cascading Storage**: 10 backup providers (auto-failover if one fails)
+- **Cascading Storage**: 9 cloud storage providers with automatic failover
 - **Authentication**: Login + optional 2FA
 - **AI Features**: Book summaries, recommendations, reading analytics
+- **Obsidian Theme**: Dark, minimalist design
 
 ---
 
-## ⚡ Quick Start (5 minutes)
+# 🚀 Quick Start: Deploy in 10 Minutes
 
-### 1. Deploy with GitHub (Easiest)
+## Step 1: Set Required Secrets (2 min)
 
-This is your fallback storage—it works immediately.
+In **Cloudflare Dashboard** → **Pages** → **nightmare-library** → **Settings** → **Environment variables** → **Production**:
 
-```bash
-# Create a GitHub Personal Access Token:
-# 1. Go to github.com → Settings → Developer settings → Personal access tokens
-# 2. Click "Generate new token (classic)"
-# 3. Check: repo (full control of private repositories)
-# 4. Copy the token
+Add these secrets:
+
+```
+PASSWORD        = your-login-password (min 8 characters)
+JWT_SECRET      = (run: openssl rand -hex 32)
+GITHUB_TOKEN    = ghp_xxxxx...
+GITHUB_OWNER    = your-github-username
 ```
 
-Set this secret in **Cloudflare Pages Dashboard**:
-- Go to: Pages > nightmare-library > Settings > Environment variables
-- **Production** environment:
-  - Name: `GITHUB_TOKEN` → Value: `ghp_xxxxxxx...`
-  - Name: `GITHUB_OWNER` → Value: `your-username`
+**How to get GITHUB_TOKEN (no credit card needed):**
+1. Go to: https://github.com/settings/tokens
+2. Click "Generate new token (classic)"
+3. Check: `repo` (full control)
+4. Copy token
+5. Paste in Cloudflare Dashboard
 
-That's it! Your library now has storage. ✅
+Done! Your library now has storage. ✅
 
 ---
 
-## 🔧 Core Setup (15 minutes)
+## Step 2: Create KV Namespaces (3 min)
 
-### Step 1: Create 10 D1 Databases
+In **Cloudflare Dashboard** → **KV Namespaces**:
+
+Click **Create namespace** three times:
+- `KV_SESSIONS` (stores login sessions)
+- `KV_CACHE` (caches API responses)
+- `KV_RATE_LIMIT` (tracks rate limits)
+
+For each, copy the **Namespace ID** and **Preview ID**.
+
+---
+
+## Step 3: Create 10 D1 Databases (3 min)
 
 In **Cloudflare Dashboard** → **D1**:
 
-Create 10 databases named:
+Click **Create database** ten times. Name them:
 ```
 nightmare-library-db-1
 nightmare-library-db-2
@@ -56,43 +73,45 @@ nightmare-library-db-10
 
 For each, copy the **Database ID**.
 
-### Step 2: Create KV Namespaces
+---
 
-In **Cloudflare Dashboard** → **KV Namespaces**:
+## Step 4: Add Bindings to Cloudflare Pages (2 min)
 
-Create 3 namespaces:
-```
-KV_SESSIONS    (stores login sessions)
-KV_CACHE       (caches API responses)
-KV_RATE_LIMIT  (tracks rate limits)
-```
+In **Cloudflare Dashboard** → **Pages** → **nightmare-library** → **Settings** → **Functions**:
 
-For each, copy the **Namespace ID** and **Preview ID**.
+### D1 Database Bindings
 
-### Step 3: Add Bindings to Cloudflare Pages
-
-In **Cloudflare Dashboard** → **Pages** → **nightmare-library** → **Settings** → **Functions** → **D1 database bindings**:
-
-Add all 10 databases:
+Click **Add binding** for each database:
 ```
 DB_1   → nightmare-library-db-1
 DB_2   → nightmare-library-db-2
-... (repeat for DB_3 through DB_10)
+DB_3   → nightmare-library-db-3
+DB_4   → nightmare-library-db-4
+DB_5   → nightmare-library-db-5
+DB_6   → nightmare-library-db-6
+DB_7   → nightmare-library-db-7
+DB_8   → nightmare-library-db-8
+DB_9   → nightmare-library-db-9
+DB_10  → nightmare-library-db-10
 ```
 
-Add KV bindings:
+### KV Namespace Bindings
+
+Click **Add binding** for each KV namespace:
 ```
-KV_SESSIONS   → (KV namespace ID)
-KV_CACHE      → (KV namespace ID)
-KV_RATE_LIMIT → (KV namespace ID)
+KV_SESSIONS   → (copy Namespace ID)
+KV_CACHE      → (copy Namespace ID)
+KV_RATE_LIMIT → (copy Namespace ID)
 ```
 
-### Step 4: Initialize Database Schemas
+---
 
-Using **Cloudflare Wrangler CLI**:
+## Step 5: Initialize Database Schemas (2 min)
+
+Using **Wrangler CLI**:
 
 ```bash
-# For each database, run:
+# Copy and paste each line:
 wrangler d1 execute nightmare-library-db-1 --remote --file=migrations/schema.sql
 wrangler d1 execute nightmare-library-db-2 --remote --file=migrations/schema.sql
 wrangler d1 execute nightmare-library-db-3 --remote --file=migrations/schema.sql
@@ -105,228 +124,276 @@ wrangler d1 execute nightmare-library-db-9 --remote --file=migrations/schema.sql
 wrangler d1 execute nightmare-library-db-10 --remote --file=migrations/schema.sql
 ```
 
-### Step 5: Set Required Secrets
+---
 
-In **Cloudflare Dashboard** → **Pages** → **nightmare-library** → **Settings** → **Environment variables**:
-
-**Production environment:**
-```
-PASSWORD   = your-login-password (min 8 characters)
-JWT_SECRET = (random 64-char string: openssl rand -hex 32)
-```
-
-### Step 6: Deploy
+## Step 6: Deploy (1 min)
 
 Push to GitHub:
 ```bash
 git push origin main
 ```
 
-Cloudflare Pages will automatically build and deploy. ✅
-
----
-
-## 🎯 Add Storage Providers (Optional)
-
-Your GitHub storage is active. To add backups (so if GitHub fails, the system tries the next provider):
-
-### Easiest: Dropbox (2GB free)
-
-1. Go to: https://www.dropbox.com/developers/apps
-2. Create app → Choose "Scoped access" → "Full Dropbox" → "App folder"
-3. Generate access token
-4. In **Cloudflare Pages** → **Environment variables** → **Production**:
-   ```
-   DROPBOX_ACCESS_TOKEN = sl_xxxxx...
-   ```
-
-### Medium: Google Drive (15GB free)
-
-1. Go to: https://console.cloud.google.com/
-2. Create OAuth 2.0 credentials (Desktop app)
-3. Get your access token (requires OAuth flow)
-4. In **Cloudflare Pages** → **Environment variables** → **Production**:
-   ```
-   GDRIVE_ACCESS_TOKEN = ya29_xxxxx...
-   GDRIVE_FOLDER_ID = (optional folder ID)
-   ```
-
-### Medium: OneDrive (5GB free)
-
-1. Register app at: https://portal.azure.com/
-2. Get Microsoft Graph OAuth token
-3. In **Cloudflare Pages** → **Environment variables** → **Production**:
-   ```
-   ONEDRIVE_ACCESS_TOKEN = EwAWA8l6BAAURSN1OzQ...
-   ONEDRIVE_FOLDER_ID = (optional folder ID)
-   ```
-
-### Medium: Box (10GB free)
-
-1. Go to: https://app.box.com/developers/console
-2. Create custom app → OAuth 2.0
-3. Generate access token
-4. In **Cloudflare Pages** → **Environment variables** → **Production**:
-   ```
-   BOX_ACCESS_TOKEN = xxxxx...
-   BOX_FOLDER_ID = (optional folder ID)
-   ```
-
-### Medium: pCloud (10GB free)
-
-1. Go to: https://my.pcloud.com/
-2. Settings → Applications → Create app
-3. Get OAuth access token
-4. In **Cloudflare Pages** → **Environment variables** → **Production**:
-   ```
-   PCLOUD_ACCESS_TOKEN = xxxxx...
-   PCLOUD_FOLDER_ID = (optional folder ID)
-   ```
-
-### Medium: Yandex Disk (10GB free)
-
-1. Go to: https://oauth.yandex.com/
-2. Create OAuth app
-3. Get access token
-4. In **Cloudflare Pages** → **Environment variables** → **Production**:
-   ```
-   YANDEX_ACCESS_TOKEN = xxxxx...
-   YANDEX_PATH = NightmareLibrary (optional folder path)
-   ```
-
-### Medium: Koofr (10GB free)
-
-1. Go to: https://koofr.eu/
-2. Settings → Apps → Create app
-3. Get OAuth access token
-4. In **Cloudflare Pages** → **Environment variables** → **Production**:
-   ```
-   KOOFR_ACCESS_TOKEN = xxxxx...
-   KOOFR_MOUNT_ID = primary (optional, default is primary)
-   KOOFR_PATH = NightmareLibrary (optional path)
-   ```
-
-### Advanced: Backblaze B2 (10GB free)
-
-1. Go to: https://www.backblaze.com/b2/cloud-storage.html
-2. Create account
-3. Create bucket for "nightmare-library"
-4. Generate application key
-5. In **Cloudflare Pages** → **Environment variables** → **Production**:
-   ```
-   B2_KEY_ID = 0015abc123xxxxx
-   B2_APPLICATION_KEY = 0015abc123xxxxx (keep secret!)
-   B2_BUCKET_ID = abcdef123456...
-   B2_BUCKET_NAME = nightmare-library
-   ```
-
-### Advanced: Mega.nz (20GB free)
-
-⚠️ **WARNING**: Mega only allows ONE library account at a time.
-
-1. Create a Mega.nz account (separate from personal account)
-2. In **Cloudflare Pages** → **Environment variables** → **Production**:
-   ```
-   MEGA_EMAIL = library@example.com
-   MEGA_PASSWORD = your-mega-password
-   MEGA_FOLDER_ID = (optional folder ID)
-   ```
-
----
-
-## 🔍 How It Works
-
-### Database Sharding
-
-Books are distributed across 10 databases using **consistent hashing**:
-
-```
-Book ID "book_123" → Hash → Database 3 (DB_3)
-Book ID "book_456" → Hash → Database 7 (DB_7)
-```
-
-When you fetch a book, the system automatically queries the right database. List operations query all 10 databases and combine results.
-
-### Storage Failover
-
-When you upload a book:
-
-1. Try Google Drive
-2. If Google Drive fails → Try Dropbox
-3. If Dropbox fails → Try OneDrive
-4. ... (continues through all 10 providers)
-5. Finally → GitHub (guaranteed to work)
-
-If any provider fails, the system automatically tries the next one.
-
----
-
-## 🛡️ Security Notes
-
-### Secrets Checklist
-
-✅ **NEVER commit secrets to GitHub**
-✅ **Always set via Cloudflare Dashboard** (not in code)
-✅ **Rotate tokens periodically**
-✅ **Use least-privilege access** (limit scopes when possible)
-
-### Storage Provider Best Practices
-
-- **Google Drive**: Limit to specific folder
-- **Dropbox**: Use app-specific folders
-- **GitHub**: Use Personal Access Token with repo scope only
-- **Mega**: Use dedicated email, strong password
-- **B2**: Rotate application keys monthly
-
----
-
-## 🐛 Debugging
-
-### Check Which Database a Book Uses
-
-```javascript
-const router = createDatabaseRouter(env);
-const dbIndex = router.getDbIndex(bookId);
-console.log(`Book stored in: DB_${dbIndex + 1}`);
-```
-
-### Test a Specific Provider
-
-Books are stored in priority order. To verify a provider is working:
-1. Upload a test book
-2. Check Cloudflare Pages logs
-3. Search for the provider name in logs
-
-### View Database Sizes
-
-In **Cloudflare Dashboard** → **D1** → Click each database to see storage used.
+Cloudflare Pages automatically builds and deploys. ✅
 
 ---
 
 ## 📋 Checklist
 
-- [ ] Created 10 D1 databases
+- [ ] Set `PASSWORD` and `JWT_SECRET` secrets
+- [ ] Set `GITHUB_TOKEN` and `GITHUB_OWNER` secrets
 - [ ] Created 3 KV namespaces
+- [ ] Created 10 D1 databases
 - [ ] Added D1 bindings to Cloudflare Pages
 - [ ] Added KV bindings to Cloudflare Pages
 - [ ] Ran schema migrations on all 10 databases
-- [ ] Set `PASSWORD` and `JWT_SECRET` secrets
-- [ ] Set `GITHUB_TOKEN` and `GITHUB_OWNER` (minimum)
 - [ ] Pushed to GitHub
-- [ ] Tested book upload → check if it appears in list
-- [ ] (Optional) Added additional storage providers
+
+**✅ Done! Your library is live.**
 
 ---
 
-## 💡 Tips
+# 🎯 Optional: Add More Storage Providers
 
-- **Start with GitHub storage only** — it's simple and guaranteed to work
-- **Add other providers later** — you can add them anytime
-- **Test uploads early** — verify storage is working before adding features
-- **Monitor database sizes** — spread books across databases to avoid hitting 500MB limits
+Your GitHub storage works. Want backups? Add these providers in this order (easiest → hardest, **all free, no credit card required**).
+
+## 1️⃣ Dropbox (Easiest - 2GB free)
+
+**Setup time: 2 minutes**
+
+1. Go to: https://www.dropbox.com/developers/apps
+2. Click **Create app**
+3. Choose: **Scoped access** → **App folder** → Create
+4. Go to **Permissions** tab → Check `files.content.write` + `files.content.read`
+5. Go to **Settings** tab → **Generate token** → Copy it
+
+In **Cloudflare Pages** → **Environment variables** → **Production**:
+```
+DROPBOX_ACCESS_TOKEN = sl_xxxxx...
+```
+
+✅ Done!
 
 ---
 
-## Questions?
+## 2️⃣ OneDrive (Easy - 5GB free)
 
-Check `wrangler.toml` for config comments, or see `functions/db-router.ts` for the sharding logic.
+**Setup time: 3 minutes**
+
+1. Go to: https://login.microsoftonline.com/ → Sign in
+2. Open: https://myapps.microsoft.com/ → Look for "OneDrive"
+3. Right-click → **Open in new tab** → Sign in
+4. Get OAuth token:
+   - Go to: https://developer.microsoft.com/graph/graph-explorer
+   - Sign in → Click **Access token**
+   - Copy the token shown
+
+In **Cloudflare Pages** → **Environment variables** → **Production**:
+```
+ONEDRIVE_ACCESS_TOKEN = EwAWA8l6BAAURSN1OzQ...
+```
+
+✅ Done!
+
+---
+
+## 3️⃣ pCloud (Easy - 10GB free)
+
+**Setup time: 2 minutes**
+
+1. Go to: https://myaccount.pcloud.com/
+2. Settings → Apps & security → Authorize an app
+3. Generate access token → Copy it
+
+In **Cloudflare Pages** → **Environment variables** → **Production**:
+```
+PCLOUD_ACCESS_TOKEN = xxxxx...
+```
+
+✅ Done!
+
+---
+
+## 4️⃣ Box (Easy - 10GB free)
+
+**Setup time: 3 minutes**
+
+1. Go to: https://app.box.com/developers/console
+2. **Create New App** → **Custom app** → OAuth 2.0
+3. Go to **Configuration** tab
+4. Get your **Client ID** and **Client Secret**
+5. Use OAuth to get access token
+
+In **Cloudflare Pages** → **Environment variables** → **Production**:
+```
+BOX_ACCESS_TOKEN = xxxxx...
+BOX_FOLDER_ID    = 0 (optional, defaults to root)
+```
+
+✅ Done!
+
+---
+
+## 5️⃣ Yandex Disk (Medium - 10GB free)
+
+**Setup time: 3 minutes**
+
+1. Go to: https://oauth.yandex.com/
+2. **Create new app** → Fill details
+3. Get **OAuth token** from your app
+4. Copy access token
+
+In **Cloudflare Pages** → **Environment variables** → **Production**:
+```
+YANDEX_ACCESS_TOKEN = AQAxxxxx...
+YANDEX_PATH         = NightmareLibrary (optional folder path)
+```
+
+✅ Done!
+
+---
+
+## 6️⃣ Koofr (Medium - 10GB free)
+
+**Setup time: 3 minutes**
+
+1. Go to: https://app.koofr.eu/
+2. Settings → Integrations
+3. Create API token → Copy it
+
+In **Cloudflare Pages** → **Environment variables** → **Production**:
+```
+KOOFR_ACCESS_TOKEN = xxxxx...
+KOOFR_MOUNT_ID     = primary (optional, default is "primary")
+KOOFR_PATH         = NightmareLibrary (optional folder path)
+```
+
+✅ Done!
+
+---
+
+## 7️⃣ Mega (Medium - 20GB free)
+
+**Setup time: 3 minutes**
+
+⚠️ **Important**: Use a dedicated email/password (not your personal Mega account).
+
+1. Create account at: https://mega.nz/
+2. Use a separate email: `library-backup@example.com`
+3. Set a strong password
+
+In **Cloudflare Pages** → **Environment variables** → **Production**:
+```
+MEGA_EMAIL     = library-backup@example.com
+MEGA_PASSWORD  = your-mega-password
+MEGA_FOLDER_ID = (optional folder ID)
+```
+
+✅ Done!
+
+---
+
+## 8️⃣ Google Drive (Medium - 15GB free, no credit card!)
+
+**Setup time: 5 minutes**
+
+Unlike other Google services, Google Drive API **does NOT require a credit card**.
+
+1. Go to: https://console.cloud.google.com/
+2. **Select Project** → **New Project** → Name it → Create
+3. Left sidebar → **APIs & Services** → **Library**
+4. Search **Google Drive API** → **Enable**
+5. **APIs & Services** → **OAuth consent screen**
+   - User Type: **External**
+   - App name: `Nightmare Library`
+   - User support email: your email
+   - Developer contact: your email
+   - **Save and Continue**
+6. **APIs & Services** → **Credentials**
+   - **+ Create Credentials** → **OAuth client ID**
+   - Application type: **Web application**
+   - Authorized redirect URIs: `https://yourapp.pages.dev/api/auth/callback` (adjust to your domain)
+   - **Create**
+7. Download the JSON file or copy **Client ID** and **Client Secret**
+8. Get access token via OAuth flow (the system will handle this)
+
+In **Cloudflare Pages** → **Environment variables** → **Production**:
+```
+GDRIVE_ACCESS_TOKEN = ya29_xxxxx...
+GDRIVE_FOLDER_ID    = (optional folder ID)
+```
+
+✅ Done!
+
+---
+
+## 🔄 How Storage Failover Works
+
+When you upload a book:
+
+1. Try **Dropbox**
+2. If fails → Try **OneDrive**
+3. If fails → Try **pCloud**
+4. If fails → Try **Box**
+5. If fails → Try **Yandex**
+6. If fails → Try **Koofr**
+7. If fails → Try **Mega**
+8. If fails → Try **Google Drive**
+9. If fails → Use **GitHub** (guaranteed fallback)
+
+If any provider fails, the system automatically tries the next one. ✅
+
+---
+
+## 🔒 Security Notes
+
+✅ **Secrets stored in Cloudflare Dashboard** (encrypted)  
+✅ **Never committed to GitHub**  
+✅ **Rotated periodically**  
+✅ **Least-privilege access tokens**  
+
+**Example:**
+- Dropbox: Limited to app folder only
+- Google Drive: Limited to specific folder
+- GitHub: Read/write repo scope only
+
+---
+
+## 🛠️ How Database Sharding Works
+
+Books are distributed across 10 databases using **consistent hashing**:
+
+```
+Book ID "book_123" → Hash function → Database 3 (DB_3)
+Book ID "book_456" → Hash function → Database 7 (DB_7)
+```
+
+When you fetch a book, the system automatically queries the right database.
+
+**List operations** query all 10 databases and combine results.
+
+---
+
+## 🐛 Debugging
+
+### Check Database Sizes
+**Cloudflare Dashboard** → **D1** → Click each database
+
+### View Storage Provider Logs
+**Cloudflare Pages** → **nightmare-library** → **Deployments** → Click latest → **Logs**
+
+### Test Upload
+1. Login
+2. Upload a test book
+3. Check logs for provider attempts
+4. Verify book appears in list
+
+---
+
+## 📚 Next Steps
+
+1. Login at your deployed URL
+2. Upload a test EPUB/PDF
+3. Verify it appears in your library
+4. Optionally add storage provider backups
+
+**Questions?** Check `functions/db-router.ts` for sharding logic or `wrangler.toml` for configuration reference.
