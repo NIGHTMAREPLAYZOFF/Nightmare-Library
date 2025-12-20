@@ -25,6 +25,37 @@ binding = "DB_1"
 database_name = "nightmare-library-db-1"
 database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 
+[[d2_databases]]
+binding = "DB_2"
+database_name = "nightmare-library-db-2"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[d3_databases]]
+binding = "DB_3"
+database_name = "nightmare-library-db-3"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[d4_databases]]
+binding = "DB_4"
+database_name = "nightmare-library-db-4"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[d5_databases]]
+binding = "DB_5"
+database_name = "nightmare-library-db-5"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[d6_databases]]
+binding = "DB_6"
+database_name = "nightmare-library-db-6"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[d7_databases]]
+binding = "DB_7"
+database_name = "nightmare-library-db-7"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+
 # ============================================
 # KV Namespace Bindings (DO NOT EDIT HERE)
 # ============================================
