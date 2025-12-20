@@ -9,21 +9,22 @@ pages_build_output_dir = "./"
 # ============================================
 # D1 Database Binding
 # ============================================
-# Run: npx wrangler d1 create nightmare-library-db
-# Then copy the database_id from output and paste below
+# Configure these in Cloudflare Pages Settings:
+# Pages > nightmare-library > Settings > Functions > D1 database bindings
+#
+# You need 10 databases: nightmare-library-db-1 through nightmare-library-db-10
 [[d1_databases]]
-binding = "DB"
-database_name = "nightmare-library-db"
+binding = "DB_1"
+database_name = "nightmare-library-db-1"
 database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 
 # ============================================
 # KV Namespace Bindings
 # ============================================
-# Run these commands to create KV namespaces:
-# npx wrangler kv:namespace create "KV_SESSIONS"
-# npx wrangler kv:namespace create "KV_CACHE"
-# npx wrangler kv:namespace create "KV_RATE_LIMIT"
-
+# Configure these in Cloudflare Pages Settings:
+# Pages > nightmare-library > Settings > Functions > KV namespace bindings
+#
+# You need 3 KV namespaces: KV_SESSIONS, KV_CACHE, KV_RATE_LIMIT
 [[kv_namespaces]]
 binding = "KV_SESSIONS"
 id = "REPLACE_WITH_YOUR_KV_SESSIONS_ID"
@@ -46,84 +47,28 @@ preview_id = "REPLACE_WITH_YOUR_KV_RATE_LIMIT_PREVIEW_ID"
 ENVIRONMENT = "production"
 
 # ============================================
-# SECRETS CONFIGURATION (10 Storage Providers)
+# SECRETS CONFIGURATION
 # ============================================
+# DO NOT put actual secret values here!
 # DO NOT commit secrets to version control!
-# Set in Cloudflare Dashboard: Pages > nightmare-library > Settings > Environment variables
 #
-# CLI method: npx wrangler secret put SECRET_NAME
+# Set all secrets in Cloudflare Pages Dashboard:
+# Pages > nightmare-library > Settings > Environment variables
 #
-# REQUIRED SECRETS:
-# -----------------
-# PASSWORD          - Your login password (min 8 chars)
-# JWT_SECRET        - Random 64-char string (openssl rand -hex 32)
+# Required secrets:
+#   PASSWORD       - Your login password (min 8 chars)
+#   JWT_SECRET     - Random 64-char string: openssl rand -hex 32
 #
-# ============================================
-# STORAGE PROVIDERS (Cascading Fallback Order)
-# ============================================
-# The system tries providers in this order until one succeeds.
-# Configure at least ONE provider. GitHub is recommended as fallback.
+# Storage provider secrets (set at least GITHUB_TOKEN):
+#   GDRIVE_ACCESS_TOKEN, GDRIVE_FOLDER_ID
+#   DROPBOX_ACCESS_TOKEN, DROPBOX_PATH
+#   ONEDRIVE_ACCESS_TOKEN, ONEDRIVE_FOLDER_ID
+#   PCLOUD_ACCESS_TOKEN, PCLOUD_FOLDER_ID
+#   BOX_ACCESS_TOKEN, BOX_FOLDER_ID
+#   YANDEX_ACCESS_TOKEN, YANDEX_PATH
+#   KOOFR_ACCESS_TOKEN, KOOFR_MOUNT_ID, KOOFR_PATH
+#   B2_KEY_ID, B2_APPLICATION_KEY, B2_BUCKET_ID, B2_BUCKET_NAME
+#   MEGA_EMAIL, MEGA_PASSWORD, MEGA_FOLDER_ID
+#   GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO
 #
-# 1. GOOGLE DRIVE (15GB free)
-# ---------------------------
-# GDRIVE_ACCESS_TOKEN - OAuth2 access token from Google Cloud Console
-# GDRIVE_FOLDER_ID    - (Optional) Specific folder ID
-#
-# 2. DROPBOX (2GB free, can earn more)
-# ------------------------------------
-# DROPBOX_ACCESS_TOKEN - Access token from Dropbox App Console
-# DROPBOX_PATH         - (Optional) Path like "/NightmareLibrary"
-#
-# 3. ONEDRIVE (5GB free)
-# ----------------------
-# ONEDRIVE_ACCESS_TOKEN - OAuth2 token from Microsoft Graph
-# ONEDRIVE_FOLDER_ID    - (Optional) Folder ID for storage
-#
-# 4. PCLOUD (10GB free)
-# ---------------------
-# PCLOUD_ACCESS_TOKEN - Access token from pCloud OAuth
-# PCLOUD_FOLDER_ID    - (Optional) Folder ID, default is root
-#
-# 5. BOX (10GB free)
-# ------------------
-# BOX_ACCESS_TOKEN - Access token from Box Developer Console
-# BOX_FOLDER_ID    - (Optional) Folder ID for books
-#
-# 6. YANDEX DISK (10GB free)
-# --------------------------
-# YANDEX_ACCESS_TOKEN - OAuth token from Yandex OAuth
-# YANDEX_PATH         - (Optional) Path like "NightmareLibrary"
-#
-# 7. KOOFR (10GB free)
-# --------------------
-# KOOFR_ACCESS_TOKEN - OAuth2 token from Koofr
-# KOOFR_MOUNT_ID     - (Optional) Mount ID, default "primary"
-# KOOFR_PATH         - (Optional) Path for storage
-#
-# 8. BACKBLAZE B2 (10GB free)
-# ---------------------------
-# B2_KEY_ID         - Application Key ID from B2 Console
-# B2_APPLICATION_KEY - Application Key
-# B2_BUCKET_ID      - Bucket ID to store files
-# B2_BUCKET_NAME    - Bucket name for download URLs
-#
-# 9. MEGA.NZ (20GB free, ONE account only)
-# ----------------------------------------
-# MEGA_EMAIL     - Your Mega.nz email
-# MEGA_PASSWORD  - Your Mega.nz password
-# MEGA_FOLDER_ID - (Optional) Folder ID
-#
-# 10. GITHUB (4GB repository limit - FINAL FALLBACK)
-# --------------------------------------------------
-# GITHUB_TOKEN - Personal Access Token with repo scope
-# GITHUB_OWNER - Your GitHub username
-# GITHUB_REPO  - (Optional) defaults to "nightmare-library-storage"
-#
-# SECURITY NOTES:
-# ---------------
-# - Never commit actual secret values
-# - Rotate secrets periodically
-# - Use least-privilege access tokens
-# - Monitor access logs for suspicious activity
-#
-# For detailed setup instructions, see: CLOUDFLARE_SETUP.md
+# See CLOUDFLARE_SETUP.md for detailed instructions on obtaining each secret.
