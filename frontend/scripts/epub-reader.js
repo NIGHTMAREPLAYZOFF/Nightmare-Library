@@ -10,6 +10,8 @@ class EPUBReader {
         this.rendition = null;
         this.currentLocation = 0;
         this.isRTL = false; // Right-to-left for manga
+        this.touchStartX = 0;
+        this.touchStartY = 0;
     }
 
     /**
@@ -57,6 +59,7 @@ class EPUBReader {
         `;
 
         this.setupEventListeners();
+        this.setupMobileControls();
         this.loadEPUBLibrary();
     }
 
@@ -93,6 +96,57 @@ class EPUBReader {
         });
     }
 
+    setupMobileControls() {
+        const container = document.getElementById('epub-container');
+        if (!container) return;
+
+        // Swipe detection for page navigation
+        container.addEventListener('touchstart', (e) => {
+            this.touchStartX = e.touches[0].clientX;
+            this.touchStartY = e.touches[0].clientY;
+        }, false);
+
+        container.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const diffX = this.touchStartX - touchEndX;
+            const diffY = this.touchStartY - touchEndY;
+
+            // Require horizontal swipe (not vertical)
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                if (this.isRTL) {
+                    // In RTL: swipe right = prev, swipe left = next
+                    if (diffX > 0) this.next();
+                    else this.prev();
+                } else {
+                    // In LTR: swipe right = prev, swipe left = next
+                    if (diffX > 0) this.prev();
+                    else this.next();
+                }
+            }
+        }, false);
+
+        // Tap zones: left side = prev, right side = next
+        const epubWrapper = document.getElementById('epub-reader-wrapper');
+        epubWrapper?.addEventListener('click', (e) => {
+            const rect = container.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const isLeftThird = clickX < rect.width / 3;
+            const isRightThird = clickX > (rect.width * 2) / 3;
+
+            // Only trigger on tap zones, not buttons
+            if (e.target === container || e.target?.parentElement === container) {
+                if (this.isRTL) {
+                    if (isLeftThird) this.next();
+                    if (isRightThird) this.prev();
+                } else {
+                    if (isLeftThird) this.prev();
+                    if (isRightThird) this.next();
+                }
+            }
+        });
+    }
+
     async loadBook(bookId) {
         try {
             const response = await fetch(`/api/books/get?id=${bookId}`);
@@ -123,7 +177,15 @@ class EPUBReader {
             const metadata = this.book.packaging.metadata;
             const language = metadata?.language?.['#text'] || '';
             const dir = metadata?.dir || '';
-            this.isRTL = dir === 'rtl' || /^(ja|ar|he|fa|ur)/.test(language);
+            
+            // Check spine direction first (most reliable)
+            let spineRTL = false;
+            try {
+                const spine = this.book.packaging.spine;
+                spineRTL = spine?.[0]?.dir === 'rtl' || spine?.['page-progression-direction'] === 'rtl';
+            } catch (e) {}
+            
+            this.isRTL = spineRTL || dir === 'rtl' || /^(ja|ar|he|fa|ur)/.test(language);
             
             // Get saved RTL preference
             const bookId = new URLSearchParams(window.location.search).get('id');

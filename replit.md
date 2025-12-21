@@ -22,17 +22,21 @@
 
 ---
 
-## 🎯 Recent Changes (December 20, 2025)
+## 🎯 Recent Changes (December 21, 2025)
 
-### Documentation Restructure
+### Mobile Controls & RTL (Right-to-Left)
+- ✅ **Swipe Navigation**: Horizontal swipe (>50px) to turn pages on mobile
+- ✅ **Tap Zones**: Left third = prev, Right third = next page
+- ✅ **RTL Auto-Detection**: Checks EPUB spine direction first (most reliable)
+- ✅ **RTL Keyboard**: Arrow keys reverse in manga mode
+- ✅ **Mobile Gestures**: All controls are touch-friendly
+- ✅ **Fixed XSS**: Book titles sanitized with escapeHtml()
+- ✅ **API Key Paths**: Added step-by-step instructions for all 10 storage providers
+
+### Documentation Restructure (Earlier)
 - ✅ Reorganized `CLOUDFLARE_SETUP.md` from easy → hard
 - ✅ Cloudflare setup ordered: Secrets → KV → D1
 - ✅ Storage providers ordered by ease of setup (2-5 min each)
-- ✅ Removed self-hosted providers (B2 is cloud-hosted, not self-hosted)
-- ✅ Verified all storage providers don't require credit card
-- ✅ Added Google Drive, then removed it (requires CC verification)
-- ✅ Added Backblaze B2 and CloudGate as 9th and 10th providers
-- ✅ Secured `wrangler.toml` - no plain-text credentials
 
 ### Updated Docs
 - `CLOUDFLARE_SETUP.md` - Complete rewrite with clear progression
@@ -129,11 +133,14 @@
 ## 🚀 Current Status
 
 ### ✅ Completed
-- Database sharding implementation (all 16+ endpoints use DatabaseRouter)
-- TypeScript compilation (8 minor LSP errors remaining, all non-blocking)
-- Security audit (authentication, 2FA, rate limiting, sessions)
-- Storage provider architecture (10 providers with cascading failover)
-- Documentation reorganization (easy → hard progression)
+- ✅ Mobile controls (swipe & tap navigation)
+- ✅ RTL/manga support with spine direction detection
+- ✅ XSS security fixes (title sanitization)
+- ✅ Database sharding implementation (all 16+ endpoints use DatabaseRouter)
+- ✅ TypeScript compilation (8 minor LSP errors remaining, all non-blocking)
+- ✅ Security audit (authentication, 2FA, rate limiting, sessions)
+- ✅ Storage provider architecture (10 providers with cascading failover)
+- ✅ Documentation reorganization (easy → hard progression)
 
 ### 🎯 Next Steps
 1. User deploys to Cloudflare Pages (push to GitHub, configure dashboard)
