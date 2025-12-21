@@ -9,6 +9,7 @@ class EPUBReader {
         this.book = null;
         this.rendition = null;
         this.currentLocation = 0;
+        this.isRTL = false; // Right-to-left for manga
     }
 
     /**
@@ -38,6 +39,12 @@ class EPUBReader {
                             <button id="epub-font-decrease">A-</button>
                             <span id="epub-font-size">16px</span>
                             <button id="epub-font-increase">A+</button>
+                        </div>
+                    </div>
+                    <div class="menu-section">
+                        <label>Reading Mode</label>
+                        <div class="rtl-controls">
+                            <button id="epub-rtl-toggle" class="epub-btn">RTL (Manga) Mode</button>
                         </div>
                     </div>
                     <div class="menu-section">
@@ -71,10 +78,17 @@ class EPUBReader {
         document.getElementById('epub-close-menu')?.addEventListener('click', () => this.toggleMenu(false));
         document.getElementById('epub-font-increase')?.addEventListener('click', () => this.increaseFontSize());
         document.getElementById('epub-font-decrease')?.addEventListener('click', () => this.decreaseFontSize());
+        document.getElementById('epub-rtl-toggle')?.addEventListener('click', () => this.toggleRTL());
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') this.prev();
-            if (e.key === 'ArrowRight') this.next();
+            if (this.isRTL) {
+                // In RTL mode, arrows are reversed (right = prev, left = next)
+                if (e.key === 'ArrowLeft') this.next();
+                if (e.key === 'ArrowRight') this.prev();
+            } else {
+                if (e.key === 'ArrowLeft') this.prev();
+                if (e.key === 'ArrowRight') this.next();
+            }
             if (e.key === 'Escape') this.toggleMenu(false);
         });
     }
@@ -105,11 +119,29 @@ class EPUBReader {
         try {
             this.book = new window.ePub(url);
             
+            // Check if book metadata indicates RTL (manga/Japanese/Arabic)
+            const metadata = this.book.packaging.metadata;
+            const language = metadata?.language?.['#text'] || '';
+            const dir = metadata?.dir || '';
+            this.isRTL = dir === 'rtl' || /^(ja|ar|he|fa|ur)/.test(language);
+            
+            // Get saved RTL preference
+            const bookId = new URLSearchParams(window.location.search).get('id');
+            const savedRTL = localStorage.getItem(`epubRTL_${bookId}`);
+            if (savedRTL !== null) this.isRTL = JSON.parse(savedRTL);
+            
             this.rendition = this.book.renderTo('epub-container', {
                 width: '100%',
                 height: '100%',
-                flow: 'paginated'
+                flow: 'paginated',
+                dir: this.isRTL ? 'rtl' : 'ltr'
             });
+
+            // Apply RTL styles if needed
+            if (this.isRTL) {
+                document.getElementById('epub-reader-wrapper')?.classList.add('epub-rtl');
+                document.getElementById('epub-rtl-toggle').textContent = '✓ RTL (Manga) Mode';
+            }
 
             await this.rendition.display();
             this.setupRenditionListeners();
@@ -182,6 +214,31 @@ class EPUBReader {
         const panel = document.getElementById('epub-reader-menu-panel');
         if (panel) {
             panel.hidden = show === undefined ? !panel.hidden : !show;
+        }
+    }
+
+    toggleRTL() {
+        this.isRTL = !this.isRTL;
+        const bookId = new URLSearchParams(window.location.search).get('id');
+        localStorage.setItem(`epubRTL_${bookId}`, JSON.stringify(this.isRTL));
+        
+        const wrapper = document.getElementById('epub-reader-wrapper');
+        const btn = document.getElementById('epub-rtl-toggle');
+        
+        if (this.isRTL) {
+            wrapper?.classList.add('epub-rtl');
+            btn.textContent = '✓ RTL (Manga) Mode';
+            const nav = document.querySelector('.epub-reader-nav');
+            nav?.classList.add('rtl');
+        } else {
+            wrapper?.classList.remove('epub-rtl');
+            btn.textContent = 'RTL (Manga) Mode';
+            const nav = document.querySelector('.epub-reader-nav');
+            nav?.classList.remove('rtl');
+        }
+        
+        if (this.rendition && this.currentLocation) {
+            this.rendition.display(this.currentLocation);
         }
     }
 
