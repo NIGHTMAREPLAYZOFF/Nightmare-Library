@@ -104,11 +104,19 @@ function setupEventListeners() {
     // Keyboard shortcuts
     document.addEventListener('keydown', handleKeyboard);
 
-    // Auto-save progress
-    autoSaveInterval = setInterval(saveProgress, 30000);
-
-    // Save on page unload
+    // Save on page unload (only save on leaving, not every 30s)
     window.addEventListener('beforeunload', saveProgress);
+    
+    // Cross-tab sync: save immediately if another tab updates progress
+    window.addEventListener('storage', (e) => {
+        if (e.key === `epubProgress_${bookId}` || e.key === `pdfProgress_${bookId}`) {
+            // Another tab changed progress, update local state
+            if (e.newValue) {
+                const newProgress = JSON.parse(e.newValue);
+                progress = newProgress.percent || progress;
+            }
+        }
+    });
 }
 
 async function loadBook() {
@@ -752,7 +760,7 @@ function handleKeyboard(e) {
     }
 }
 
-// Progress saving
+// Progress saving - only on page unload
 async function saveProgress() {
     if (!bookId) return;
 
@@ -765,27 +773,28 @@ async function saveProgress() {
             }
         }
 
-        // Security: Use parameterized queries or prepared statements if backend allows,
-        // or ensure bookId is validated server-side to prevent injection.
-        // For this client-side script, we assume backend handles validation.
-        await fetch('/api/books/progress', {
+        // Save locally first (instant)
+        localStorage.setItem(`progress_${bookId}`, JSON.stringify({
+            percent: progress,
+            currentPage: fileType === 'pdf' ? currentPage : null,
+            currentChapter,
+            savedAt: Date.now()
+        }));
+
+        // Send to server async (don't block unload)
+        fetch('/api/books/progress', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // Security: Add CSRF token if applicable
-                // 'X-CSRF-Token': getCsrfToken()
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 bookId,
                 percent: progress,
                 currentPage: fileType === 'pdf' ? currentPage : null,
                 currentChapter
-            })
-        });
+            }),
+            keepalive: true // Keep alive even if page closes
+        }).catch(() => {});
     } catch (error) {
         console.error('Failed to save progress:', error);
-        // Security: Log detailed error on client-side only for debugging,
-        // but avoid exposing sensitive info to end-users.
     }
 }
 

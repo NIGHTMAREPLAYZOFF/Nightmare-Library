@@ -1,0 +1,20 @@
+#request-counter {
+    position: fixed;
+    top: 12px;
+    right: 16px;
+    background: rgba(187, 134, 252, 0.1);
+    border: 1px solid rgba(187, 134, 252, 0.3);
+    color: #bb86fc;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    z-index: 10000;
+    backdrop-filter: blur(10px);
+}
+
+#request-counter:hover {
+    background: rgba(187, 134, 252, 0.2);
+    border-color: rgba(187, 134, 252, 0.5);
+}

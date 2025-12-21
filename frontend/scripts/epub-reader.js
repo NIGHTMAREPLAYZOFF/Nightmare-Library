@@ -218,7 +218,20 @@ class EPUBReader {
         this.rendition.on('relocated', (location) => {
             this.currentLocation = location.start.cfi;
             this.updateProgress();
-            this.saveProgress();
+            // Don't auto-save on every page - save only on beforeunload
+        });
+        
+        // Save progress only when leaving the page
+        window.addEventListener('beforeunload', () => this.saveProgress());
+        
+        // Cross-tab sync
+        window.addEventListener('storage', (e) => {
+            const bookId = new URLSearchParams(window.location.search).get('id');
+            if (e.key === `epubProgress_${bookId}` && e.newValue) {
+                const newProgress = JSON.parse(e.newValue);
+                // Update UI to reflect other tab's progress
+                document.getElementById('epub-progress').textContent = newProgress.percent + '%';
+            }
         });
     }
 
@@ -318,13 +331,16 @@ class EPUBReader {
                 percent: Math.round((this.rendition.currentLocation().progress * 100) || 0),
                 currentChapter: this.rendition.currentLocation().start.href
             };
+            // Save locally first (instant)
             localStorage.setItem(`epubProgress_${bookId}`, JSON.stringify(progress));
             
+            // Send to server async (don't block page unload)
             if (navigator.onLine) {
                 fetch('/api/books/progress', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookId, ...progress })
+                    body: JSON.stringify({ bookId, ...progress }),
+                    keepalive: true // Keep request alive even if page closes
                 }).catch(() => {});
             }
         }

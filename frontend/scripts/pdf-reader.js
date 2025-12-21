@@ -100,6 +100,17 @@ class PDFReader {
                 document.getElementById('pdf-reader-title').textContent = data.book.title;
                 await this.loadPDF(data.book.file_url);
                 this.loadProgress();
+                
+                // Save on page unload only
+                window.addEventListener('beforeunload', () => this.saveProgress());
+                
+                // Cross-tab sync
+                window.addEventListener('storage', (e) => {
+                    if (e.key === `pdfProgress_${bookId}` && e.newValue) {
+                        const newProgress = JSON.parse(e.newValue);
+                        document.getElementById('pdf-page-info').textContent = `/ ${this.totalPages}`;
+                    }
+                });
             }
         } catch (error) {
             console.error('PDF load error:', error);
@@ -191,13 +202,16 @@ class PDFReader {
                 percent: Math.round((this.currentPage / this.totalPages) * 100),
                 currentPage: this.currentPage
             };
+            // Save locally first
             localStorage.setItem(`pdfProgress_${bookId}`, JSON.stringify(progress));
             
+            // Send to server async
             if (navigator.onLine) {
                 fetch('/api/books/progress', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookId, ...progress })
+                    body: JSON.stringify({ bookId, ...progress }),
+                    keepalive: true
                 }).catch(() => {});
             }
         }
