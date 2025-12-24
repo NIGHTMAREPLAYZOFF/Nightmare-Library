@@ -940,7 +940,7 @@ function handleContextMenuAction(action) {
 
 // Book Actions
 function openBook(bookId) {
-    window.location.href = `/reader?id=${bookId}`;
+    window.location.href = `/frontend/reader.html?id=${bookId}`;
 }
 
 // Upload Modal

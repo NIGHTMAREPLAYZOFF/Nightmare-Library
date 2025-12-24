@@ -158,7 +158,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     return new Response(JSON.stringify({ 
       success: true,
-      redirect: '/dashboard'
+      redirect: '/frontend/dashboard.html'
     }), {
       status: 200,
       headers: {

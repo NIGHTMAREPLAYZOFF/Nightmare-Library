@@ -37,12 +37,27 @@ const PUBLIC_PATHS = [
 ];
 
 // Routes that require authentication
-const PROTECTED_PATHS = ['/dashboard', '/reader', '/frontend/', '/api/'];
+const PROTECTED_PATHS = [
+  '/dashboard',
+  '/reader',
+  '/frontend/dashboard.html',
+  '/frontend/reader.html',
+  '/frontend/scripts/',
+  '/frontend/styles/',
+  '/api/'
+];
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { request, env, next } = context;
   const url = new URL(request.url);
-  const path = url.pathname;
+  let path = url.pathname;
+
+  // Normalize dashboard and reader routes to serve HTML
+  if (path === '/dashboard') {
+    path = '/frontend/dashboard.html';
+  } else if (path === '/reader') {
+    path = '/frontend/reader.html';
+  }
 
   // Allow public paths
   if (PUBLIC_PATHS.some(p => path === p || path.startsWith('/frontend/assets/'))) {
@@ -50,7 +65,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   }
 
   // Check for session cookie on protected routes
-  if (PROTECTED_PATHS.some(p => path === p || path.startsWith(p))) {
+  if (PROTECTED_PATHS.some(p => path.startsWith(p)) || path === '/frontend/dashboard.html' || path === '/frontend/reader.html') {
     const cookies = request.headers.get('Cookie') || '';
     const sessionToken = cookies
       .split(';')
