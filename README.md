@@ -112,16 +112,8 @@ Using **Wrangler CLI**:
 
 ```bash
 # Copy and paste each line:
-wrangler d1 execute nightmare-library-db-1 --remote --file=migrations/schema.sql
-wrangler d1 execute nightmare-library-db-2 --remote --file=migrations/schema.sql
-wrangler d1 execute nightmare-library-db-3 --remote --file=migrations/schema.sql
-wrangler d1 execute nightmare-library-db-4 --remote --file=migrations/schema.sql
-wrangler d1 execute nightmare-library-db-5 --remote --file=migrations/schema.sql
-wrangler d1 execute nightmare-library-db-6 --remote --file=migrations/schema.sql
-wrangler d1 execute nightmare-library-db-7 --remote --file=migrations/schema.sql
-wrangler d1 execute nightmare-library-db-8 --remote --file=migrations/schema.sql
-wrangler d1 execute nightmare-library-db-9 --remote --file=migrations/schema.sql
-wrangler d1 execute nightmare-library-db-10 --remote --file=migrations/schema.sql
+
+
 ```
 
 ---
