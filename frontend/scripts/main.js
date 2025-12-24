@@ -401,69 +401,6 @@ async function loadSettings() {
     }
 }
 
-// Rendering
-function renderBooks(books, containerId) {
-    if (containerId === 'all-books-grid') {
-        // Use virtual bookshelf for the main grid
-        const virtualShelfInstance = getVirtualShelfInstance();
-        virtualShelfInstance.setBooks(books);
-    } else {
-        // Legacy rendering for other grids like 'recently-read-grid'
-        const container = document.getElementById(containerId);
-        if (!container) return;
-
-        clearElement(container);
-
-        if (books.length === 0) {
-            const emptyMsg = createElementWithText('p', 'No books yet. Upload your first book!', {
-                style: {
-                    color: 'var(--text-muted)',
-                    textAlign: 'center',
-                    padding: '40px'
-                }
-            });
-            container.appendChild(emptyMsg);
-            return;
-        }
-
-        // Build cards safely
-        const fragment = document.createDocumentFragment();
-        const virtualShelfInstance = getVirtualShelfInstance();
-        
-        books.forEach(book => {
-            const card = createElement('div', {
-                className: 'book-card',
-                dataset: { bookId: book.id },
-                tabindex: '0',
-                role: 'button'
-            });
-            
-            const content = virtualShelfInstance.createBookCardContent(book);
-            card.appendChild(content);
-            
-            card.addEventListener('click', (e) => {
-                const menuButton = card.querySelector('.card-menu');
-                if (menuButton && menuButton.contains(e.target)) {
-                    e.stopPropagation();
-                    showContextMenu(e, card.dataset.bookId);
-                } else {
-                    openBook(card.dataset.bookId);
-                }
-            });
-            
-            card.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    openBook(card.dataset.bookId);
-                }
-            });
-            
-            fragment.appendChild(card);
-        });
-
-        container.appendChild(fragment);
-    }
-}
 
 // Virtualized Bookshelf for Performance
 class VirtualBookshelf {
@@ -692,8 +629,8 @@ class VirtualBookshelf {
 
     attachEventListeners() {
         // Use event delegation on the container
-        this.container.removeEventListener('click', this.handleClick);
-        this.removeEventListener('keypress', this.handleKeyPress);
+        if (this.handleClick) this.container.removeEventListener('click', this.handleClick);
+        if (this.handleKeyPress) this.container.removeEventListener('keypress', this.handleKeyPress);
 
         this.handleClick = (e) => {
             const card = e.target.closest('.book-card');
@@ -1458,11 +1395,6 @@ function openSettingsModal() {
         })
         .catch(e => console.error('Failed to load 2FA status:', e));
     
-    // 2FA toggle visibility
-    twoFACheckbox?.addEventListener('change', () => {
-        twoFAGroup.style.display = twoFACheckbox.checked ? 'block' : 'none';
-    });
-    
     document.getElementById('settings-modal').classList.add('visible');
 }
 
@@ -1601,12 +1533,3 @@ function debounce(func, wait) {
 // For now, we assume it's handled elsewhere or available globally.
 // A more robust implementation would initialize it here after data load.
 
-// Initial call to renderTags after data loading is complete to ensure all tags are processed
-document.addEventListener('DOMContentLoaded', () => {
-    // Ensure initial render is called correctly
-    init();
-    // Render tags once books and shelves are loaded
-    loadData().then(() => {
-        renderTags();
-    });
-});
