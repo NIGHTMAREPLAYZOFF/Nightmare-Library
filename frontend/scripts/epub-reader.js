@@ -75,7 +75,7 @@ class EPUBReader {
         document.getElementById('epub-prev-chapter')?.addEventListener('click', () => this.prev());
         document.getElementById('epub-next-chapter')?.addEventListener('click', () => this.next());
         document.getElementById('epub-reader-back')?.addEventListener('click', () => {
-            window.location.href = '/frontend/dashboard.html';
+            window.location.href = '/dashboard';
         });
         document.getElementById('epub-reader-menu')?.addEventListener('click', () => this.toggleMenu());
         document.getElementById('epub-close-menu')?.addEventListener('click', () => this.toggleMenu(false));

@@ -61,6 +61,14 @@ async function init() {
         return;
     }
 
+    // Back button handler
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            window.location.href = '/dashboard';
+        });
+    }
+    
     setupEventListeners();
     await loadBook();
     loadThemePreference();

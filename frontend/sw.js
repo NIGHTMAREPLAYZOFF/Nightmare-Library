@@ -9,8 +9,8 @@ const BOOK_CACHE = 'nightmare-books-v1';
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
-  '/frontend/dashboard.html',
-  '/frontend/reader.html',
+  '/dashboard',
+  '/reader',
   '/frontend/styles/main.css',
   '/frontend/styles/reader.css',
   '/frontend/scripts/main.js',

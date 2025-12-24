@@ -70,7 +70,7 @@ class PDFReader {
         document.getElementById('pdf-prev-page')?.addEventListener('click', () => this.prevPage());
         document.getElementById('pdf-next-page')?.addEventListener('click', () => this.nextPage());
         document.getElementById('pdf-reader-back')?.addEventListener('click', () => {
-            window.location.href = '/frontend/dashboard.html';
+            window.location.href = '/dashboard';
         });
         document.getElementById('pdf-reader-menu')?.addEventListener('click', () => this.toggleMenu());
         document.getElementById('pdf-close-menu')?.addEventListener('click', () => this.toggleMenu(false));

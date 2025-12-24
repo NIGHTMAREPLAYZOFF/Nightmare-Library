@@ -36,6 +36,9 @@ const PUBLIC_PATHS = [
   '/frontend/assets/broken-image.svg'
 ];
 
+// Routes that require authentication
+const PROTECTED_PATHS = ['/dashboard', '/reader', '/frontend/', '/api/'];
+
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { request, env, next } = context;
   const url = new URL(request.url);
@@ -47,7 +50,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   }
 
   // Check for session cookie on protected routes
-  if (path.startsWith('/frontend/') || path.startsWith('/api/')) {
+  if (PROTECTED_PATHS.some(p => path === p || path.startsWith(p))) {
     const cookies = request.headers.get('Cookie') || '';
     const sessionToken = cookies
       .split(';')

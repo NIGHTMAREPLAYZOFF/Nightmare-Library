@@ -304,7 +304,7 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    window.location.href = data.redirect || '/frontend/dashboard.html';
+                    window.location.href = data.redirect || '/dashboard';
                 } else {
                     let message = data.message || 'Login failed';
 
