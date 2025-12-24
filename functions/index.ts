@@ -2,7 +2,7 @@
 /// <reference lib="webworker" />
 /**
  * Hono API Router for Nightmare Library
- * Consolidates all API endpoints with unified middleware and error handling
+ * Unified error handling, health checks, and API consolidation
  */
 import { Hono } from 'hono';
 
@@ -25,15 +25,39 @@ interface Env {
 
 const api = new Hono<{ Bindings: Env }>();
 
-// API error handler middleware
+// Global error handler
 api.onError((err, c) => {
   console.error('API Error:', err);
-  return c.json({ success: false, message: 'API Error', error: err.message }, 500);
+  return c.json({ 
+    success: false, 
+    message: 'API Error', 
+    error: err.message 
+  }, 500);
 });
 
 // Health check endpoint
 api.get('/health', (c) => {
-  return c.json({ success: true, status: 'API is running' });
+  return c.json({ 
+    success: true, 
+    status: 'API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API info endpoint
+api.get('/api', (c) => {
+  return c.json({
+    success: true,
+    name: 'Nightmare Library API',
+    version: '1.0.0',
+    endpoints: [
+      'GET /health',
+      'POST /api/auth',
+      'GET/POST /api/books/*',
+      'GET/POST /api/shelves/*',
+      'GET/POST /api/settings/*'
+    ]
+  });
 });
 
 // Export for Cloudflare Pages
