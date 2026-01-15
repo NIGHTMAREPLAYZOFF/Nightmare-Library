@@ -1,0 +1,598 @@
+/* Nightmare Library - Reader Styles */
+
+:root {
+    --reader-bg: #0a0a0a;
+    --reader-text: #e0e0e0;
+}
+
+.theme-obsidian {
+    --reader-bg: #0a0a0a;
+    --reader-text: #e0e0e0;
+}
+
+.theme-sepia {
+    --reader-bg: #f4ecd8;
+    --reader-text: #5c4b37;
+}
+
+.theme-light {
+    --reader-bg: #ffffff;
+    --reader-text: #212121;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: var(--reader-bg);
+    color: var(--reader-text);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+}
+
+.reader-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Reader Header */
+.reader-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: rgba(10, 10, 10, 0.95);
+    border-bottom: 1px solid #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 100;
+    transform: translateY(0);
+    transition: transform 0.3s;
+}
+
+.reader-header.hidden {
+    transform: translateY(-100%);
+}
+
+.reader-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.back-btn {
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    color: #e0e0e0;
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: background 0.2s;
+}
+
+.back-btn:hover {
+    background: #252525;
+}
+
+.reader-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #e0e0e0;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reader-header-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reader-progress-bar {
+    width: 200px;
+    height: 4px;
+    background: #2a2a2a;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.reader-progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #bb86fc, #7c4dff);
+    border-radius: 2px;
+    transition: width 0.3s;
+}
+
+.reader-progress-text {
+    font-size: 12px;
+    color: #a0a0a0;
+    min-width: 40px;
+}
+
+.reader-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reader-btn {
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #a0a0a0;
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+.reader-btn:hover {
+    background: #252525;
+    border-color: #3a3a3a;
+    color: #e0e0e0;
+}
+
+.reader-btn.active {
+    background: rgba(187, 134, 252, 0.15);
+    border-color: #bb86fc;
+    color: #bb86fc;
+}
+
+/* Font Size Controls */
+.font-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    background: #1a1a1a;
+    border-radius: 8px;
+}
+
+.font-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    color: #a0a0a0;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.font-btn:hover {
+    background: #252525;
+    color: #e0e0e0;
+}
+
+/* Theme Selector */
+.theme-selector {
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    background: #1a1a1a;
+    border-radius: 8px;
+}
+
+.theme-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.theme-btn:hover {
+    transform: scale(1.1);
+}
+
+.theme-btn.active {
+    border-color: #bb86fc;
+}
+
+.theme-btn.obsidian {
+    background: #0a0a0a;
+    border-color: #2a2a2a;
+}
+
+.theme-btn.sepia {
+    background: #f4ecd8;
+}
+
+.theme-btn.light {
+    background: #ffffff;
+}
+
+/* Reader Content */
+.reader-content {
+    flex: 1;
+    padding: 80px 20px 100px;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.epub-container {
+    background: var(--reader-bg);
+    min-height: 60vh;
+}
+
+.pdf-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.pdf-page {
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    max-width: 100%;
+}
+
+/* Fullscreen immersive mode */
+body.fullscreen .reader-header,
+body.fullscreen .reader-nav {
+    transition: transform 0.3s ease;
+}
+
+body.fullscreen .epub-container,
+body.fullscreen .pdf-container {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+/* Navigation */
+.reader-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(10, 10, 10, 0.95);
+    border-top: 1px solid #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    z-index: 100;
+    transform: translateY(0);
+    transition: transform 0.3s;
+}
+
+.reader-nav.hidden {
+    transform: translateY(100%);
+}
+
+.nav-btn {
+    height: 44px;
+    padding: 0 24px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    color: #e0e0e0;
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background: #252525;
+    border-color: #3a3a3a;
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-indicator {
+    font-size: 14px;
+    color: #a0a0a0;
+    min-width: 100px;
+    text-align: center;
+}
+
+/* Reading Progress Ring */
+.reader-progress-ring {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    z-index: 90;
+}
+
+.reader-progress-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.reader-progress-ring .bg {
+    fill: none;
+    stroke: #2a2a2a;
+    stroke-width: 4;
+}
+
+.reader-progress-ring .progress {
+    fill: none;
+    stroke: url(#progressGradient);
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.3s;
+}
+
+.reader-progress-ring .text {
+    fill: #e0e0e0;
+    font-size: 12px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+/* Table of Contents Sidebar */
+.toc-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    background: #111111;
+    border-right: 1px solid #2a2a2a;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+    display: flex;
+    flex-direction: column;
+}
+
+.toc-sidebar.open {
+    transform: translateX(0);
+}
+
+.toc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.toc-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.toc-close {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    color: #a0a0a0;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toc-close:hover {
+    background: #252525;
+    color: #e0e0e0;
+}
+
+.toc-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 0;
+}
+
+.toc-item {
+    display: block;
+    padding: 12px 20px;
+    color: #a0a0a0;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.toc-item:hover {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+.toc-item.active {
+    background: rgba(187, 134, 252, 0.1);
+    color: #bb86fc;
+    border-left: 3px solid #bb86fc;
+}
+
+.toc-item.nested {
+    padding-left: 36px;
+    font-size: 13px;
+}
+
+/* Overlay for TOC */
+.toc-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 190;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.toc-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Loading State */
+.reader-loading {
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+}
+
+.reader-loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid #2a2a2a;
+    border-top-color: #bb86fc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.reader-loading-text {
+    color: #a0a0a0;
+    font-size: 14px;
+}
+
+/* Error State */
+.reader-error {
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+}
+
+.reader-error-icon {
+    font-size: 64px;
+    color: #ef5350;
+    margin-bottom: 20px;
+}
+
+.reader-error-title {
+    font-size: 20px;
+    color: #e0e0e0;
+    margin-bottom: 8px;
+}
+
+.reader-error-text {
+    color: #a0a0a0;
+    margin-bottom: 24px;
+}
+
+/* Fullscreen Mode */
+.fullscreen .reader-header,
+.fullscreen .reader-nav {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.fullscreen:hover .reader-header,
+.fullscreen:hover .reader-nav {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.fullscreen .reader-content {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+/* Keyboard Shortcuts Hint */
+.shortcuts-hint {
+    position: fixed;
+    bottom: 80px;
+    left: 20px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #a0a0a0;
+    z-index: 90;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.shortcuts-hint.visible {
+    opacity: 1;
+}
+
+.shortcuts-hint kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #252525;
+    border-radius: 4px;
+    font-family: monospace;
+    color: #e0e0e0;
+    margin: 0 2px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .reader-header-center {
+        display: none;
+    }
+    
+    .reader-title {
+        max-width: 150px;
+    }
+    
+    .theme-selector {
+        display: none;
+    }
+    
+    .toc-sidebar {
+        width: 100%;
+    }
+    
+    .reader-content {
+        padding: 70px 16px 80px;
+    }
+    
+    .nav-btn span {
+        display: none;
+    }
+    
+    .nav-btn {
+        padding: 0 16px;
+    }
+}

@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Build outputs
+dist/
+build/
+*.wasm
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# Cloudflare
+.wrangler/
+.mf/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Upload storage
+uploads/
+storage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# Replit specific
+.replit
+replit.nix
+.config/

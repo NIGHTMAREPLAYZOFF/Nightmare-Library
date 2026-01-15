@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nightmare Library</title>
+    <link rel="icon" href="/frontend/assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/frontend/styles/main.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <button class="menu-toggle" id="menu-toggle" aria-label="Toggle sidebar">
+                &#9776;
+            </button>
+
+            <div class="search-container">
+                <span class="search-icon">&#128269;</span>
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="search-input"
+                    placeholder="Search books by title, author, or tag..."
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="header-actions">
+                <button class="header-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+                    🌙
+                </button>
+                <button class="header-btn" id="settings-btn" aria-label="Settings" title="Settings">
+                    &#9881;
+                </button>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-section">
+                <ul class="sidebar-nav">
+                    <li class="sidebar-item active" data-view="all">
+                        <span class="sidebar-item-icon">&#128218;</span>
+                        <span>All Books</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">Shelves</h3>
+                <ul class="sidebar-nav" id="shelves-list">
+                    <!-- Shelves loaded dynamically -->
+                </ul>
+                <div class="sidebar-item add-shelf-btn" id="add-shelf-btn">
+                    <span class="sidebar-item-icon">+</span>
+                    <span>New Shelf</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">Tags</h3>
+                <ul class="sidebar-nav" id="tags-list">
+                    <!-- Tags loaded dynamically -->
+                </ul>
+            </div>
+
+            <div class="sidebar-divider"></div>
+
+            <div class="sidebar-item" id="upload-sidebar-btn">
+                <span class="sidebar-item-icon">&#11014;</span>
+                <span>Upload Book</span>
+            </div>
+
+            <div class="sidebar-divider"></div>
+
+            <div class="sidebar-stats" id="sidebar-stats">
+                <p>&#128202; <span id="book-count">0</span> Books</p>
+                <p>&#128194; <span id="shelf-count">0</span> Shelves</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <!-- Quick Filters Bar -->
+            <div class="filters-bar" style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
+                <button class="filter-chip active" data-filter="all">All Books</button>
+                <button class="filter-chip" data-filter="favorites">⭐ Favorites</button>
+                <button class="filter-chip" data-filter="recent">📖 Recent</button>
+                <button class="filter-chip" data-filter="unread">📚 Unread</button>
+                <div style="flex: 1;"></div>
+                <select id="sort-select" style="padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                    <option value="recent">Sort: Recent</option>
+                    <option value="title">Sort: Title</option>
+                    <option value="author">Sort: Author</option>
+                    <option value="progress">Sort: Progress</option>
+                </select>
+            </div>
+
+            <!-- Recently Read Section -->
+            <section class="section" id="recently-read-section">
+                <div class="section-header">
+                    <h2 class="section-title">Recently Read</h2>
+                </div>
+                <div class="recently-read-scroll" id="recently-read-grid">
+                    <!-- Recently read books loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- Library Section -->
+            <section class="section" id="library-section">
+                <div class="section-header">
+                    <h2 class="section-title" id="library-title">Library</h2>
+                </div>
+                <div class="books-grid" id="books-grid">
+                    <!-- Books loaded dynamically -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <div class="empty-state-icon">&#128218;</div>
+                    <h3 class="empty-state-title">Your library is empty</h3>
+                    <p class="empty-state-text">Upload your first book to get started</p>
+                    <button class="btn btn-primary" id="empty-upload-btn">Upload Book</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- FAB (Floating Action Button) -->
+        <button class="fab" id="fab" aria-label="Upload book">
+            +
+        </button>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="context-menu">
+        <div class="context-menu-item" data-action="open">
+            <span>&#128214;</span>
+            <span>Open</span>
+        </div>
+        <div class="context-menu-item" data-action="add-to-shelf">
+            <span>&#128194;</span>
+            <span>Add to Shelf</span>
+        </div>
+        <div class="context-menu-item" data-action="edit">
+            <span>&#9998;</span>
+            <span>Edit Metadata</span>
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item danger" data-action="delete">
+            <span>&#128465;</span>
+            <span>Delete</span>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal-overlay" id="upload-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Upload Book</h3>
+                <button class="modal-close" id="upload-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="drop-zone" id="drop-zone">
+                    <div class="drop-zone-icon">&#128195;</div>
+                    <p class="drop-zone-text">Drag & drop your book here</p>
+                    <p class="drop-zone-hint">or click to browse (EPUB, PDF)</p>
+                    <input type="file" id="file-input" accept=".epub,.pdf" hidden>
+                </div>
+
+                <div id="upload-form" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-input" id="upload-title" placeholder="Book title">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Author</label>
+                        <input type="text" class="form-input" id="upload-author" placeholder="Author name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input type="text" class="form-input" id="upload-tags" placeholder="Comma-separated tags">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="upload-modal-footer" style="display: none;">
+                <button class="btn btn-secondary" id="upload-cancel">Cancel</button>
+                <button class="btn btn-primary" id="upload-submit">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Book</h3>
+                <button class="modal-close" id="edit-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-book-id">
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" class="form-input" id="edit-title">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Author</label>
+                    <input type="text" class="form-input" id="edit-author">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tags</label>
+                    <input type="text" class="form-input" id="edit-tags" placeholder="Comma-separated">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="edit-cancel">Cancel</button>
+                <button class="btn btn-primary" id="edit-submit">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shelf Modal -->
+    <div class="modal-overlay" id="shelf-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="shelf-modal-title">Create Shelf</h3>
+                <button class="modal-close" id="shelf-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="shelf-id">
+                <div class="form-group">
+                    <label class="form-label">Shelf Name</label>
+                    <input type="text" class="form-input" id="shelf-name" placeholder="e.g., Fantasy, To Read">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <input type="color" class="form-input" id="shelf-color" value="#bb86fc" style="height: 44px; padding: 4px;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="shelf-cancel">Cancel</button>
+                <button class="btn btn-primary" id="shelf-submit">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add to Shelf Modal -->
+    <div class="modal-overlay" id="add-to-shelf-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add to Shelf</h3>
+                <button class="modal-close" id="add-to-shelf-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="add-to-shelf-book-id">
+                <div id="shelf-options">
+                    <!-- Shelf options loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Delete Book</h3>
+                <button class="modal-close" id="delete-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "<span id="delete-book-title"></span>"?</p>
+                <p style="color: var(--text-muted); margin-top: 8px;">This action cannot be undone.</p>
+                <input type="hidden" id="delete-book-id">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="delete-cancel">Cancel</button>
+                <button class="btn btn-danger" id="delete-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Settings</h3>
+                <button class="modal-close" id="settings-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Reader Theme</label>
+                    <select class="form-select" id="settings-theme">
+                        <option value="obsidian">Obsidian (Dark)</option>
+                        <option value="sepia">Sepia</option>
+                        <option value="light">Light</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Default Font Size</label>
+                    <select class="form-select" id="settings-font-size">
+                        <option value="14">Small (14px)</option>
+                        <option value="16">Medium (16px)</option>
+                        <option value="18">Large (18px)</option>
+                        <option value="20">Extra Large (20px)</option>
+                    </select>
+                </div>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border-color);">
+                
+                <h4 style="margin-bottom: 12px; color: var(--text-primary);">Security</h4>
+                <div class="form-group">
+                    <label class="form-label">Two-Factor Authentication</label>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input type="checkbox" id="settings-twofa" style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="color: var(--text-secondary); font-size: 0.9em;">Enable 2FA with security code</span>
+                    </div>
+                </div>
+                <div class="form-group" id="twofa-password-group" style="display: none;">
+                    <label class="form-label">Security Code (4+ characters)</label>
+                    <input type="password" class="form-input" id="settings-twofa-password" placeholder="Enter security code">
+                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">You'll need this code to unlock your library on next login</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="settings-cancel">Cancel</button>
+                <button class="btn btn-primary" id="settings-save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="/frontend/scripts/dom-helpers.js"></script>
+    <script src="/frontend/scripts/theme.js"></script>
+    <script src="/frontend/scripts/search.js"></script>
+    <script src="/frontend/scripts/analytics.js"></script>
+    <script src="/frontend/scripts/ai-features.js"></script>
+    <script src="/frontend/scripts/performance-mode.js"></script>
+    <script type="module" src="/frontend/scripts/reading-gamification.js"></script>
+    <script type="module" src="/frontend/scripts/main.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/frontend/sw.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>

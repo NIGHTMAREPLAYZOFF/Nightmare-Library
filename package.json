@@ -1,0 +1,25 @@
+{
+  "name": "nightmare-library",
+  "version": "1.0.0",
+  "description": "A private digital library for EPUB and PDF books with obsidian-black theme",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev . --compatibility-date=2024-01-01",
+    "build": "echo 'No build step required for vanilla frontend'",
+    "deploy": "wrangler pages deploy .",
+    "db:migrate": "sqlite3 nightmare-library.db < ./migrations/schema.sql",
+    "replit:dev": "cd replit-version && npm run dev",
+    "replit:start": "cd replit-version && npm start"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240117.0",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.22.4"
+  },
+  "dependencies": {
+    "hono": "^4.6.13"
+  },
+  "keywords": ["library", "epub", "pdf", "cloudflare-pages", "digital-library"],
+  "author": "",
+  "license": "MIT"
+}
