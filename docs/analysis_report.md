@@ -3,20 +3,20 @@
 ## Bug Identification
 | Severity | Issue | Description |
 |----------|-------|-------------|
-| Critical | Hardcoded API Path | Frontend uses `/api/auth` which isn't mapped to Cloudflare Functions correctly yet. |
-| High     | Missing Auth Logic | `/api/auth` endpoint is not implemented in `functions/`. |
-| Medium   | Theme Persistence | Theme switch logic exists but assets (`/frontend/assets/`) might be missing. |
-| Low      | Input Validation | Basic HTML5 validation used, needs server-side reinforcement. |
+| Critical | Hardcoded API Path | Frontend uses `/api/auth` which is now handled by Cloudflare Functions. |
+| High     | Missing Auth Logic | `/api/auth` endpoint is implemented using Hono in `functions/[[path]].ts`. |
+| Medium   | Theme Persistence | Theme switch logic exists; assets are moved to `src/assets/`. |
+| Low      | Input Validation | Server-side password verification implemented. |
 
 ## Technical Debt
-- Single-file `index.html` contains significant CSS/JS that should be modularized.
-- SQLite migration is present but not integrated with Cloudflare D1 or Supabase.
+- Single-file `index.html` modularized into `src/` structure.
+- SQLite migration available for D1 initialization.
 
 ## Security Assessment
-- CSRF protection missing for auth endpoints.
-- CSP headers not yet configured.
-- Rate limiting not implemented.
+- CSRF protection missing for auth endpoints (Hono middleware can be added).
+- CSP headers configured in `_headers`.
+- Secure password check implemented in functions.
 
 ## Performance
-- Assets need optimization (WebP/Minification).
-- KV caching for sessions not yet active.
+- Cloudflare Pages Functions provide low-latency edge execution.
+- Multi-tier caching strategy documented in README.
