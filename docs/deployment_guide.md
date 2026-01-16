@@ -2,6 +2,9 @@
 
 ## Enhanced Project Structure
 - `src/`: Optimized frontend assets and HTML.
+- `src/js/`: Modular application logic.
+- `src/css/`: Modular stylesheets.
+- `src/components/`: Reusable UI elements (Toasts, etc).
 - `functions/`: Cloudflare Pages Functions (Hono API).
 - `database/`: Supabase and Firebase configuration scripts.
 - `docs/`: Technical documentation and analysis.
@@ -16,6 +19,7 @@
 3. **Environment Variables**:
    - `PASSWORD`: Your secret library password.
 
-## Potential Implementation Challenges
-- **Cold Starts**: Cloudflare Workers may have slight latency on first request; mitigated by lightweight Hono framework.
-- **Database Limits**: Free tiers have row/storage limits; sharding (as described in README) helps manage growth.
+## Security Features
+- **Secure Headers**: HSTS, CSP, X-Frame-Options.
+- **Auth Middleware**: CORS and Hono secure-headers.
+- **Input Sanitization**: Server-side validation.

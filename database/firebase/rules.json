@@ -1,6 +1,11 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null"
+    "books": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$book_id": {
+        ".validate": "newData.hasChildren(['title', 'file_path'])"
+      }
+    }
   }
 }
