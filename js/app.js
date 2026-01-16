@@ -83,7 +83,7 @@ form.addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (data.success) {
-            window.location.href = data.redirect || '/dashboard.html';
+            window.location.href = '/dashboard.html';
         } else {
             let message = data.message || 'Login failed';
 
@@ -103,8 +103,6 @@ form.addEventListener('submit', async (e) => {
         showError('Login failed. Please try again.');
     } finally {
         submitBtn.classList.remove('loading');
-        if (!errorMessage.classList.contains('visible') || !submitBtn.disabled) {
-           submitBtn.disabled = false;
-        }
+        submitBtn.disabled = false;
     }
 });
