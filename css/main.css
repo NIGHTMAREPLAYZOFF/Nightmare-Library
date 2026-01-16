@@ -185,6 +185,12 @@ body {
     opacity: 1;
 }
 
+.dark-theme .logo h1 {
+    background: linear-gradient(135deg, #7c4dff, #bb86fc);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
 @media (max-width: 480px) {
     .login-card {
         padding: 32px 24px;
