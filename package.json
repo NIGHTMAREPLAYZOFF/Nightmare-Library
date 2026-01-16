@@ -4,12 +4,9 @@
   "description": "A private digital library for EPUB and PDF books with obsidian-black theme",
   "type": "module",
   "scripts": {
-    "dev": "wrangler pages dev . --compatibility-date=2024-01-01",
-    "build": "echo 'No build step required for vanilla frontend'",
-    "deploy": "wrangler pages deploy .",
-    "db:migrate": "sqlite3 nightmare-library.db < ./migrations/schema.sql",
-    "replit:dev": "cd replit-version && npm run dev",
-    "replit:start": "cd replit-version && npm start"
+    "dev": "wrangler pages dev src --compatibility-date=2024-01-01",
+    "build": "echo 'Optimization step...'",
+    "deploy": "wrangler pages deploy src"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240117.0",
@@ -18,8 +15,5 @@
   },
   "dependencies": {
     "hono": "^4.6.13"
-  },
-  "keywords": ["library", "epub", "pdf", "cloudflare-pages", "digital-library"],
-  "author": "",
-  "license": "MIT"
+  }
 }
