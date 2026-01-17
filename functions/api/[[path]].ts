@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { handle } from 'hono/cloudflare-pages'
 import { secureHeaders } from 'hono/secure-headers'
+import { cors } from 'hono/cors'
 
 /**
  * Cloudflare Bindings and Secrets Interface
@@ -10,6 +11,7 @@ type Bindings = {
   // Authentication & Security
   PASSWORD: string
   JWT_SECRET: string
+  ENVIRONMENT: string
   
   // Storage Providers (Secrets)
   GDRIVE_ACCESS_TOKEN: string
@@ -40,7 +42,30 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>().basePath('/api')
 
+// Security Middleware
 app.use('*', secureHeaders())
+app.use('*', cors({
+  origin: (origin, c) => {
+    // In production, restrict to actual domain. In dev, allow localhost.
+    if (c.env.ENVIRONMENT === 'production') {
+      return origin.endsWith('.pages.dev') ? origin : null
+    }
+    return origin
+  },
+  allowMethods: ['POST', 'GET', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  exposeHeaders: ['Content-Length'],
+  maxAge: 600,
+  credentials: true,
+}))
+
+// Environment check to prevent leakage
+app.use('*', async (c, next) => {
+  await next()
+  c.header('X-Environment', c.env.ENVIRONMENT || 'production')
+  // Ensure no dev-only headers are exposed
+  c.res.headers.delete('X-Powered-By')
+})
 
 /**
  * Sharded Database Router
