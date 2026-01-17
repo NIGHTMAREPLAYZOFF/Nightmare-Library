@@ -43,7 +43,25 @@ type Bindings = {
 const app = new Hono<{ Bindings: Bindings }>().basePath('/api')
 
 // Security Middleware
-app.use('*', secureHeaders())
+app.use('*', secureHeaders({
+  contentSecurityPolicy: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", "data:"],
+    upgradeInsecureRequests: [],
+  },
+  xFrameOptions: 'DENY',
+  xContentTypeOptions: 'nosniff',
+  referrerPolicy: 'strict-origin-when-cross-origin',
+  strictTransportSecurity: 'max-age=31536000; includeSubDomains; preload',
+  xXSSProtection: '1; mode=block',
+  permissionsPolicy: {
+    camera: [],
+    microphone: [],
+    geolocation: [],
+  },
+}))
 app.use('*', cors({
   origin: (origin, c) => {
     // In production, restrict to actual domain. In dev, allow localhost.
