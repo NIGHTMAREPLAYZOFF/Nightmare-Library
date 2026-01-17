@@ -2,7 +2,7 @@
 # Nightmare Library - Security Audit Script
 # Requires: wafw00f, nuclei, wapiti
 
-TARGET="http://0.0.0.0:5000"
+TARGET="http://127.0.0.1:5000"
 PASSWORD=${PASSWORD:-"admin123"} # Fallback for local testing
 
 echo "--- 🔍 STEP 1: WAF FINGERPRINTING ---"

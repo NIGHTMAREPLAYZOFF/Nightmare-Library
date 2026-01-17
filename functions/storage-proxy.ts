@@ -1,7 +1,8 @@
+// Storage Provider Abstraction
 import { 
-  uploadToGitHub, 
-  downloadFromGitHub, 
-  deleteFromGitHub 
+  uploadToGitHub as ghUpload, 
+  downloadFromGitHub as ghDownload, 
+  deleteFromGitHub as ghDelete 
 } from './storage-github';
 
 /**
@@ -155,7 +156,7 @@ export async function uploadFile(
           result = await uploadToMega(config, fileId, data, contentType);
           break;
         case 'github':
-          result = await uploadToGitHub(config, fileId, data);
+          result = await ghUpload(config, fileId, data);
           break;
         default:
           result = { success: false, error: `Unsupported storage type: ${config.type}` };
@@ -206,7 +207,7 @@ export async function downloadFile(
       case 'mega':
         return await downloadFromMega(config, storageId);
       case 'github':
-        return await downloadFromGitHub(config, storageId);
+        return await ghDownload(config, storageId);
       default:
         return { success: false, error: `Unsupported storage type: ${config.type}` };
     }
@@ -255,13 +256,8 @@ export async function deleteFile(
         result = await deleteFromMega(config, storageId);
         break;
       case 'github':
-        result = await deleteFromGitHub(config, storageId);
-        if (result.success) {
-          githubTotalSize = Math.max(0, githubTotalSize - 1024 * 1024);
-        }
+        result = await ghDelete(config, storageId);
         break;
-      default:
-        result = { success: false, error: `Unsupported storage type: ${config.type}` };
     }
 
     return result;
