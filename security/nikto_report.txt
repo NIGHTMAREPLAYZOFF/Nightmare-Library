@@ -1,0 +1,106 @@
+- Nikto v2.5.0/
+- Nikto v2.5.0/
+- Nikto v2.5.0/
++ Target Host: 127.0.0.1
++ Target Port: 5001
++ GET /: The anti-clickjacking X-Frame-Options header is not present. See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options: 
++ GET /: The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type. See: https://www.netsparker.com/web-vulnerability-scanner/vulnerabilities/missing-content-type-header/: 
++ GET /forums//admin/config.php: Retrieved access-control-allow-origin header: *.
++ GET /forums//admin/config.php: Uncommon header 'x-server-env' found, with contents: dev.
++ GET /forums//admin/config.php: PHP Config file may contain database IDs and passwords.
++ GET /forums//adm/config.php: PHP Config file may contain database IDs and passwords.
++ GET /forums//administrator/config.php: PHP Config file may contain database IDs and passwords.
++ GET /level/16/exec/-///pwd: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/16/exec/-///show/configuration: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/16/exec//show/access-lists: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/16/level/16/exec//show/configuration: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/16/level/16/exec//show/interfaces: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/16/level/16/exec//show/interfaces/status: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/16/level/16/exec//show/version: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/16/level/16/exec//show/running-config/interface/FastEthernet: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/16/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/17/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/18/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/19/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/20/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/21/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/22/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/23/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/24/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/25/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/26/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/27/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/28/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/29/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/30/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/31/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/32/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/33/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/34/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/35/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/36/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/37/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/38/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/39/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/40/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/41/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/42/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/43/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/44/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/45/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/46/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/47/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/48/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/49/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/50/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/51/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/52/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/53/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/54/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/55/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/56/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/57/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/58/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/59/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/60/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/61/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/62/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/63/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/64/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/65/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/66/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/67/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/68/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/69/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/70/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/71/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/72/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/73/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/74/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/75/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/76/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/77/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/78/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/79/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/80/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/81/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/82/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/83/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/84/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/85/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/86/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/87/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/88/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/89/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/90/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/91/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/92/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/93/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/94/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/95/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/96/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/97/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/98/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET /level/99/exec//show: CISCO HTTP service allows remote execution of commands. See: CVE-2001-0537: 
++ GET //admin/admin.shtml: Axis network camera may allow admin bypass by using double-slashes before URLs. See: CVE-2003-0240: 
++ GET //admin/aindex.htm: FlexWATCH firmware 2.2 is vulnerable to authentication bypass by prepending an extra /'s. See: CVE-2006-3604: 
