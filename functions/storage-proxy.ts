@@ -1,3 +1,8 @@
+import { 
+  uploadToGitHub, 
+  downloadFromGitHub, 
+  deleteFromGitHub 
+} from './storage-github';
 
 /**
  * Storage Provider Abstraction
@@ -64,8 +69,8 @@ export interface ProviderHealth {
   errorCount: number;
 }
 
-const GITHUB_MAX_SIZE = 4 * 1024 * 1024 * 1024; // 4GB
-let githubTotalSize = 0;
+// GITHUB_MAX_SIZE removed as it's now handled in storage-github.ts
+// let githubTotalSize = 0;
 
 // Provider health tracking for intelligent failover
 const providerHealth: Map<StorageType, ProviderHealth> = new Map();
@@ -154,14 +159,7 @@ export async function uploadFile(
           result = await uploadToMega(config, fileId, data, contentType);
           break;
         case 'github':
-          if (githubTotalSize + data.byteLength > GITHUB_MAX_SIZE) {
-            result = { success: false, error: 'GitHub storage limit (4GB) exceeded' };
-          } else {
-            result = await uploadToGitHub(config, fileId, data);
-            if (result.success) {
-              githubTotalSize += data.byteLength;
-            }
-          }
+          result = await uploadToGitHub(config, fileId, data);
           break;
         default:
           result = { success: false, error: `Unsupported storage type: ${config.type}` };
