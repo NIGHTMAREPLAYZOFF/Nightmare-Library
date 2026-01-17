@@ -6,11 +6,7 @@ import {
 
 /**
  * Storage Provider Abstraction
- * Supports 10 storage providers with cascading fallback:
- * 1. Google Drive, 2. Dropbox, 3. OneDrive, 4. pCloud, 5. Box, 
- * 6. Yandex Disk, 7. Koofr, 8. Backblaze B2, 9. Mega.nz, 10. GitHub (4GB limit)
  */
-
 export type StorageType = 'gdrive' | 'dropbox' | 'onedrive' | 'pcloud' | 'box' | 
                           'yandex' | 'koofr' | 'b2' | 'mega' | 'github';
 

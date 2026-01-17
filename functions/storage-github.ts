@@ -1,9 +1,11 @@
+import { StorageConfig, StorageResult } from './storage-proxy';
+
 const GITHUB_MAX_SIZE = 4 * 1024 * 1024 * 1024; // 4GB hard limit per repo
 
 /**
  * Upload file to GitHub with automatic repository rotation when limit is reached
  */
-async function uploadToGitHub(
+export async function uploadToGitHub(
   config: StorageConfig,
   fileId: string,
   data: ArrayBuffer
@@ -34,7 +36,6 @@ async function uploadToGitHub(
 
   let response = await uploadToRepo(repo);
 
-  // If repo doesn't exist or limit reached, try to rotate
   if (response.status === 404 || response.status === 403 || response.status === 422) {
     for (let i = 1; i <= 100; i++) {
       const nextRepo = `nightmare-library-storage-${i}`;
@@ -82,7 +83,7 @@ async function uploadToGitHub(
 /**
  * Download file from GitHub
  */
-async function downloadFromGitHub(
+export async function downloadFromGitHub(
   config: StorageConfig,
   storageId: string
 ): Promise<{ success: boolean; data?: ArrayBuffer; contentType?: string; error?: string }> {
@@ -105,13 +106,12 @@ async function downloadFromGitHub(
 /**
  * Delete file from GitHub
  */
-async function deleteFromGitHub(
+export async function deleteFromGitHub(
   config: StorageConfig,
   storageId: string
 ): Promise<{ success: boolean; error?: string }> {
   const [repo, fileId] = storageId.includes(':') ? storageId.split(':') : [config.githubRepo, storageId];
   
-  // Get file SHA first
   const getRes = await fetch(`https://api.github.com/repos/${config.githubOwner}/${repo}/contents/books/${fileId}`, {
     headers: {
       'Authorization': `token ${config.githubToken}`,
