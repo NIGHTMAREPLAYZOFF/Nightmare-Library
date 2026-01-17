@@ -7,15 +7,10 @@
     "build": "echo 'Building...'",
     "deploy": "wrangler pages deploy ."
   },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240117.0",
-    "typescript": "^5.3.3",
-    "wrangler": "^3.114.15"
-  },
   "dependencies": {
-    "hono": "^4.6.13",
-    "@supabase/supabase-js": "^2.39.3",
-    "firebase-admin": "^12.0.0",
-    "path-to-regexp": "^6.2.1"
+    "hono": "^4.11.4",
+    "miniflare": "^4.20250906.0",
+    "nodejs": "^0.0.0",
+    "npm": "^11.7.0"
   }
 }
