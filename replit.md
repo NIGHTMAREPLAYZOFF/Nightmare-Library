@@ -54,3 +54,8 @@ Workflows are currently configured to use absolute Nix paths for critical tools:
 - Bun: /nix/store/c2fmismsm893gbrl9i7aw08ggj2vf1ws-bun-1.2.16-wrapped/bin/bun
 
 To fully restore the shell environment (including 'node' and 'npm' in PATH), the user should re-add these modules via the Replit 'Packages' or 'Modules' UI, which will regenerate the replit.nix file.
+
+## AI Capabilities
+- **Ollama**: Installed via Nix system package. Available globally as `ollama`.
+- **Local Models**: Recommended to run Qwen 2.5 Coder or DeepSeek R1 (smaller parameter versions) for coding assistance within the shell.
+- **Startup**: Use `./start_ollama.sh` to ensure the server is running.

@@ -31,4 +31,5 @@ externalPort = 80
 expertMode = true
 
 [nix]
-packages = ["tmux"]
+packages = ["tmux", "ollama"]
+channel = "stable-25_05"
