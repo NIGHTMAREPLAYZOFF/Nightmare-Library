@@ -47,3 +47,10 @@ Preferred communication style: Simple, everyday language.
 - Node.js runtime environment
 - TypeScript for type-safe development
 - ESBuild (bundled with Wrangler) for fast compilation
+## Environment Restoration Note (January 19, 2026)
+Following a manual deletion of replit.nix, the environment has been partially restored. 
+Workflows are currently configured to use absolute Nix paths for critical tools:
+- Python: /nix/store/flbj8bq2vznkcwss7sm0ky8rd0k6kar7-python-wrapped-0.1.0/bin/python3
+- Bun: /nix/store/c2fmismsm893gbrl9i7aw08ggj2vf1ws-bun-1.2.16-wrapped/bin/bun
+
+To fully restore the shell environment (including 'node' and 'npm' in PATH), the user should re-add these modules via the Replit 'Packages' or 'Modules' UI, which will regenerate the replit.nix file.

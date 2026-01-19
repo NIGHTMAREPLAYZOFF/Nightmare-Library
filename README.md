@@ -83,3 +83,6 @@ DROPBOX_ACCESS_TOKEN, DROPBOX_PATH       - Dropbox credentials
 
 ### Database Bindings (Cloudflare Dashboard)
 D1 databases must be bound as `DB_1` through `DB_10` in Cloudflare Pages settings.
+### Environment Recovery
+If replit.nix is missing, the environment has been restored using absolute paths for Python and Bun in the workflows. 
+To manually re-sync, please use the 'Packages' tab in the Replit sidebar to re-add Python, Node.js, and Bun.
