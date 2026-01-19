@@ -1,7 +1,7 @@
 #!/bin/bash
-# Check if ollama is already running
+# Start Ollama server in background if not already running
 if ! pgrep -x "ollama" > /dev/null; then
-  echo "Starting Ollama server..."
+  echo "Starting global Ollama server..."
   ollama serve > ollama.log 2>&1 &
   # Wait for it to be ready
   for i in {1..30}; do
