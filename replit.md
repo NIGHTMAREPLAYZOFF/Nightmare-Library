@@ -59,3 +59,8 @@ To fully restore the shell environment (including 'node' and 'npm' in PATH), the
 - **Ollama**: Installed via Nix system package. Available globally as `ollama`.
 - **Local Models**: Recommended to run Qwen 2.5 Coder or DeepSeek R1 (smaller parameter versions) for coding assistance within the shell.
 - **Startup**: Use `./start_ollama.sh` to ensure the server is running.
+
+## Manual Restore Paths
+Workflows use absolute Nix paths for critical tools:
+- Python: /nix/store/flbj8bq2vznkcwss7sm0ky8rd0k6kar7-python-wrapped-0.1.0/bin/python3
+- Bun: /nix/store/c2fmismsm893gbrl9i7aw08ggj2vf1ws-bun-1.2.16-wrapped/bin/bun
