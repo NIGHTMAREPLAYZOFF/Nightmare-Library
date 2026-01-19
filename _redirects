@@ -1,3 +1,5 @@
-# Single Page Application Routing
-# Only fallback to index.html if the requested file does not exist
-/* /index.html 200
+/api/* /api/:splat 200
+/assets/* /assets/:splat 200
+/css/* /css/:splat 200
+/js/* /js/:splat 200
+/index.html /index.html 200
