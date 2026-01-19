@@ -29,3 +29,6 @@ externalPort = 80
 
 [agent]
 expertMode = true
+
+[nix]
+packages = ["tmux"]
