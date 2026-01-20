@@ -30,11 +30,10 @@ externalPort = 80
 [[ports]]
 localPort = 11434
 externalPort = 3000
-exposeLocalhost = true
 
 [agent]
 expertMode = true
 
 [nix]
-packages = ["tmux", "ollama"]
+packages = ["tmux", "ollama", "python313Packages.open-interpreter"]
 channel = "stable-25_05"

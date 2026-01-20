@@ -4,5 +4,5 @@ export PATH=$PATH:/home/runner/.local/bin
 if ! curl -s http://localhost:11434/api/tags > /dev/null; then
     ./start_ollama.sh
 fi
-# Launch interpreter with profile and skip cloud checks to avoid menu
-interpreter --profile ollama_local -y
+# Launch interpreter using the user's verified syntax with -y for non-interactive stability
+interpreter --model ollama/deepseek-r1:1.5b --api_base http://localhost:11434 -y
