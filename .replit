@@ -35,5 +35,5 @@ externalPort = 3000
 expertMode = true
 
 [nix]
-packages = ["tmux", "ollama", "python313Packages.open-interpreter"]
-channel = "stable-25_05"
+packages = ["tmux", "ollama", "python313Packages.open-interpreter", "fetchutils"]
+channel = "stable-25_05
