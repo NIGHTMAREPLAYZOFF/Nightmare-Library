@@ -27,13 +27,5 @@ waitForPort = 5000
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 11434
-externalPort = 3000
-
 [agent]
 expertMode = true
-
-[nix]
-packages = ["tmux", "ollama", "python313Packages.open-interpreter", "fetchutils"]
-channel = "stable-25_05
