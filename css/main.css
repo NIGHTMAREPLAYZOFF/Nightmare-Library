@@ -26,10 +26,6 @@ body {
     background: var(--bg-primary);
     color: var(--text-primary);
     min-height: 100vh;
-}
-
-/* Login-specific centering — only applied on the login page */
-body:not(.dashboard-body) {
     display: flex;
     align-items: center;
     justify-content: center;
