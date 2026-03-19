@@ -3,17 +3,10 @@ import { handle } from 'hono/cloudflare-pages'
 import { secureHeaders } from 'hono/secure-headers'
 import { cors } from 'hono/cors'
 
-/**
- * Cloudflare Bindings and Secrets Interface
- * All configurations are injected from the Cloudflare Dashboard
- */
 type Bindings = {
-  // Authentication & Security
   PASSWORD: string
   JWT_SECRET: string
   ENVIRONMENT: string
-  
-  // Storage Providers (Secrets)
   GDRIVE_ACCESS_TOKEN: string
   DROPBOX_ACCESS_TOKEN: string
   ONEDRIVE_ACCESS_TOKEN: string
@@ -26,8 +19,7 @@ type Bindings = {
   MEGA_EMAIL: string
   MEGA_PASSWORD: string
   GITHUB_TOKEN: string
-  
-  // Database Bindings (D1)
+  KV_SESSIONS: KVNamespace
   DB_1: D1Database
   DB_2: D1Database
   DB_3: D1Database
@@ -42,13 +34,12 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>().basePath('/api')
 
-// Security Middleware
 app.use('*', secureHeaders({
   contentSecurityPolicy: {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'", "'unsafe-inline'"],
     styleSrc: ["'self'", "'unsafe-inline'"],
-    imgSrc: ["'self'", "data:"],
+    imgSrc: ["'self'", "data:", "blob:"],
     upgradeInsecureRequests: [],
   },
   xFrameOptions: 'DENY',
@@ -62,26 +53,23 @@ app.use('*', secureHeaders({
     geolocation: [],
   },
 }))
+
 app.use('*', cors({
   origin: (origin, c) => {
-    // In production, restrict to actual domain. In dev, allow localhost.
     if (c.env.ENVIRONMENT === 'production') {
       return origin.endsWith('.pages.dev') ? origin : null
     }
     return origin
   },
-  allowMethods: ['POST', 'GET', 'OPTIONS'],
+  allowMethods: ['POST', 'GET', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   exposeHeaders: ['Content-Length'],
   maxAge: 600,
   credentials: true,
 }))
 
-// Environment check to prevent leakage
 app.use('*', async (c, next) => {
   await next()
-  c.header('X-Environment', c.env.ENVIRONMENT || 'production')
-  // Ensure no dev-only headers are exposed
   c.res.headers.delete('X-Powered-By')
 })
 
@@ -95,22 +83,75 @@ const getDB = (env: Bindings, bookId: string): D1Database => {
   return (env as any)[`DB_${shard}`]
 }
 
+/**
+ * Generates a secure random session token
+ */
+const generateToken = (): string => {
+  const arr = new Uint8Array(32)
+  crypto.getRandomValues(arr)
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+
 app.post('/auth', async (c) => {
   try {
-    const { password } = await c.req.json()
-    // Validation using Cloudflare Dashboard Secrets
-    if (password === c.env.PASSWORD) {
-      return c.json({ success: true, redirect: '/dashboard.html' })
+    const body = await c.req.json()
+    const { password } = body
+
+    if (!password) {
+      return c.json({ success: false, message: 'Password is required' }, 400)
     }
-    return c.json({ success: false, message: 'Invalid credentials' }, 401)
+
+    const correctPassword = c.env.PASSWORD
+    if (!correctPassword) {
+      return c.json({ success: false, message: 'Server misconfiguration: PASSWORD secret not set' }, 500)
+    }
+
+    if (password !== correctPassword) {
+      return c.json({ success: false, message: 'Invalid password' }, 401)
+    }
+
+    // Create session token
+    const token = generateToken()
+    const sessionData = JSON.stringify({
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      userAgent: c.req.header('User-Agent') || 'unknown',
+    })
+
+    // Store in KV if available, otherwise use cookie only
+    if (c.env.KV_SESSIONS) {
+      await c.env.KV_SESSIONS.put(token, sessionData, { expirationTtl: 7 * 24 * 60 * 60 })
+    }
+
+    // Set secure session cookie
+    const isProduction = c.env.ENVIRONMENT === 'production'
+    const cookieFlags = isProduction
+      ? `HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${7 * 24 * 60 * 60}`
+      : `HttpOnly; SameSite=Strict; Path=/; Max-Age=${7 * 24 * 60 * 60}`
+
+    c.header('Set-Cookie', `NMLR_SESSION=${token}; ${cookieFlags}`)
+    return c.json({ success: true, redirect: '/dashboard.html' })
   } catch (e) {
     return c.json({ success: false, message: 'Malformed request' }, 400)
   }
 })
 
+app.post('/logout', async (c) => {
+  const cookies = c.req.header('Cookie') || ''
+  const token = cookies.split(';').map(s => s.trim()).find(s => s.startsWith('NMLR_SESSION='))?.split('=')[1]
+  if (token && c.env.KV_SESSIONS) {
+    await c.env.KV_SESSIONS.delete(token)
+  }
+  c.header('Set-Cookie', 'NMLR_SESSION=; HttpOnly; Path=/; Max-Age=0')
+  return c.json({ success: true })
+})
+
+// ─── BOOKS ───────────────────────────────────────────────────────────────────
+
 app.get('/books', async (c) => {
   const allBooks: any[] = []
-  // Aggregate metadata from all 10 sharded databases
   for (let i = 1; i <= 10; i++) {
     const db = (c.env as any)[`DB_${i}`] as D1Database
     if (db) {
@@ -122,7 +163,32 @@ app.get('/books', async (c) => {
       }
     }
   }
-  return c.json(allBooks.sort((a, b) => b.uploaded_at - a.uploaded_at))
+  return c.json(allBooks.sort((a: any, b: any) => b.uploaded_at - a.uploaded_at))
+})
+
+app.get('/books/:id', async (c) => {
+  const id = c.req.param('id')
+  const db = getDB(c.env, id)
+  if (!db) return c.json({ error: 'Database not available' }, 503)
+  try {
+    const book = await db.prepare('SELECT * FROM books WHERE id = ?').bind(id).first()
+    if (!book) return c.json({ error: 'Book not found' }, 404)
+    return c.json(book)
+  } catch (e) {
+    return c.json({ error: 'Failed to fetch book' }, 500)
+  }
+})
+
+app.delete('/books/:id', async (c) => {
+  const id = c.req.param('id')
+  const db = getDB(c.env, id)
+  if (!db) return c.json({ error: 'Database not available' }, 503)
+  try {
+    await db.prepare('DELETE FROM books WHERE id = ?').bind(id).run()
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ error: 'Failed to delete book' }, 500)
+  }
 })
 
 export const onRequest = handle(app)

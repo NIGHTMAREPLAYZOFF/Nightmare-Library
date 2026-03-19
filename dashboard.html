@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nightmare Library - Dashboard</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body class="dashboard-body">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <rect width="28" height="28" rx="8" fill="url(#grad)"/>
+                    <path d="M7 8h14M7 14h10M7 20h12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="grad" x1="0" y1="0" x2="28" y2="28">
+                            <stop offset="0%" stop-color="#bb86fc"/>
+                            <stop offset="100%" stop-color="#7c4dff"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>Nightmare Library</span>
+            </div>
+            <button class="sidebar-close" id="sidebar-close" aria-label="Close sidebar">&#x2715;</button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-view="library">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                Library
+            </a>
+            <a href="#" class="nav-item" data-view="recent">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Recent
+            </a>
+            <a href="#" class="nav-item" data-view="favorites">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Favorites
+            </a>
+            <a href="#" class="nav-item" data-view="upload">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="storage-info">
+                <div class="storage-label">
+                    <span>Storage Used</span>
+                    <span id="storage-percent">0%</span>
+                </div>
+                <div class="storage-bar">
+                    <div class="storage-fill" id="storage-fill" style="width: 0%"></div>
+                </div>
+                <p class="storage-detail" id="storage-detail">Loading...</p>
+            </div>
+            <button class="logout-btn" id="logout-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign Out
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <!-- Top Bar -->
+        <header class="topbar">
+            <button class="menu-toggle" id="menu-toggle" aria-label="Open menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+
+            <div class="search-wrap">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="search-input" class="search-input" placeholder="Search your library..." autocomplete="off">
+            </div>
+
+            <div class="topbar-actions">
+                <button class="icon-btn" id="grid-toggle" aria-label="Toggle view" title="Toggle grid/list">
+                    <svg id="grid-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </button>
+                <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme">
+                    <svg id="theme-icon-dash" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="page-content">
+
+            <!-- Library View -->
+            <section id="view-library" class="view active">
+                <div class="view-header">
+                    <div>
+                        <h1 class="view-title">My Library</h1>
+                        <p class="view-subtitle" id="book-count">Loading books...</p>
+                    </div>
+                    <div class="view-filters">
+                        <select class="filter-select" id="sort-select">
+                            <option value="recent">Most Recent</option>
+                            <option value="title">Title A–Z</option>
+                            <option value="author">Author</option>
+                            <option value="type">File Type</option>
+                        </select>
+                        <select class="filter-select" id="type-filter">
+                            <option value="all">All Types</option>
+                            <option value="epub">EPUB</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="empty-state">
+                    <div class="spinner"></div>
+                    <p>Loading your library...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state hidden">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    <h3>Your library is empty</h3>
+                    <p>Upload your first book to get started</p>
+                    <button class="btn-primary" onclick="switchView('upload')">Upload a Book</button>
+                </div>
+
+                <!-- Book Grid -->
+                <div id="book-grid" class="book-grid hidden"></div>
+            </section>
+
+            <!-- Recent View -->
+            <section id="view-recent" class="view">
+                <div class="view-header">
+                    <div>
+                        <h1 class="view-title">Recently Read</h1>
+                        <p class="view-subtitle">Pick up where you left off</p>
+                    </div>
+                </div>
+                <div id="recent-grid" class="book-grid"></div>
+                <div id="recent-empty" class="empty-state hidden">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <h3>No reading history yet</h3>
+                    <p>Start reading a book and it will appear here</p>
+                </div>
+            </section>
+
+            <!-- Favorites View -->
+            <section id="view-favorites" class="view">
+                <div class="view-header">
+                    <div>
+                        <h1 class="view-title">Favorites</h1>
+                        <p class="view-subtitle">Your starred books</p>
+                    </div>
+                </div>
+                <div id="favorites-grid" class="book-grid"></div>
+                <div id="favorites-empty" class="empty-state hidden">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <h3>No favorites yet</h3>
+                    <p>Star a book to add it to your favorites</p>
+                </div>
+            </section>
+
+            <!-- Upload View -->
+            <section id="view-upload" class="view">
+                <div class="view-header">
+                    <div>
+                        <h1 class="view-title">Upload Book</h1>
+                        <p class="view-subtitle">Add EPUB or PDF files to your library</p>
+                    </div>
+                </div>
+
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-dropzone" id="dropzone">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <h3>Drag & drop files here</h3>
+                        <p>Supports EPUB and PDF files up to 500MB</p>
+                        <label class="btn-primary upload-btn-label">
+                            Browse Files
+                            <input type="file" id="file-input" accept=".epub,.pdf" multiple hidden>
+                        </label>
+                    </div>
+
+                    <div class="upload-queue" id="upload-queue"></div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
