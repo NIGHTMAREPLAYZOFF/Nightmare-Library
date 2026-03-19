@@ -4,13 +4,15 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler pages dev . --compatibility-date=2024-01-01 --ip 0.0.0.0 --port 5000",
-    "build": "echo 'Building...'",
-    "deploy": "wrangler pages deploy ."
+    "build": "echo 'No build step required for Cloudflare Pages'",
+    "deploy": "wrangler pages deploy .",
+    "types": "wrangler types"
   },
   "dependencies": {
-    "hono": "^4.11.4",
-    "miniflare": "^4.20250906.0",
-    "nodejs": "^0.0.0",
-    "npm": "^11.7.0"
+    "hono": "^4.11.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250909.0",
+    "wrangler": "^3.114.4"
   }
 }

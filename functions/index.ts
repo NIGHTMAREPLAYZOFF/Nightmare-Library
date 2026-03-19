@@ -60,5 +60,7 @@ api.get('/api', (c) => {
   });
 });
 
-// Export for Cloudflare Pages
-export default api;
+// Export for Cloudflare Pages Functions
+export const onRequest: PagesFunction<Env> = async (context) => {
+  return api.fetch(context.request, context.env, context.waitUntil.bind(context));
+};

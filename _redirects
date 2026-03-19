@@ -1,5 +1,2 @@
-/api/* /api/:splat 200
-/assets/* /assets/:splat 200
-/css/* /css/:splat 200
-/js/* /js/:splat 200
-/index.html /index.html 200
+/dashboard /dashboard.html 200
+/reader /reader.html 200

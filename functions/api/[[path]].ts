@@ -12,7 +12,11 @@ type Bindings = {
   PASSWORD: string
   JWT_SECRET: string
   ENVIRONMENT: string
-  
+
+  // KV Namespaces
+  KV_SESSIONS: KVNamespace
+  KV_RATE_LIMIT: KVNamespace
+
   // Storage Providers (Secrets)
   GDRIVE_ACCESS_TOKEN: string
   DROPBOX_ACCESS_TOKEN: string
@@ -26,8 +30,10 @@ type Bindings = {
   MEGA_EMAIL: string
   MEGA_PASSWORD: string
   GITHUB_TOKEN: string
-  
-  // Database Bindings (D1)
+  GITHUB_OWNER: string
+  GITHUB_REPO: string
+
+  // Database Bindings (D1) — 10 shards
   DB_1: D1Database
   DB_2: D1Database
   DB_3: D1Database
@@ -95,17 +101,93 @@ const getDB = (env: Bindings, bookId: string): D1Database => {
   return (env as any)[`DB_${shard}`]
 }
 
+/**
+ * Generate a cryptographically secure random session token
+ */
+const generateSessionToken = (): string => {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return Array.from(array, b => b.toString(16).padStart(2, '0')).join('')
+}
+
 app.post('/auth', async (c) => {
   try {
     const { password } = await c.req.json()
-    // Validation using Cloudflare Dashboard Secrets
-    if (password === c.env.PASSWORD) {
-      return c.json({ success: true, redirect: '/dashboard.html' })
+    if (!password) {
+      return c.json({ success: false, message: 'Password required' }, 400)
     }
-    return c.json({ success: false, message: 'Invalid credentials' }, 401)
+
+    // Rate limiting check
+    const clientIP = c.req.header('CF-Connecting-IP') || 'unknown'
+    if (c.env.KV_RATE_LIMIT) {
+      const attempts = await c.env.KV_RATE_LIMIT.get(`auth:${clientIP}`)
+      if (attempts && parseInt(attempts) >= 10) {
+        return c.json({ success: false, message: 'Too many attempts. Try again later.', locked: true }, 429)
+      }
+    }
+
+    if (password !== c.env.PASSWORD) {
+      // Increment failed attempts
+      if (c.env.KV_RATE_LIMIT) {
+        const attempts = await c.env.KV_RATE_LIMIT.get(`auth:${clientIP}`)
+        const count = (parseInt(attempts || '0') + 1)
+        await c.env.KV_RATE_LIMIT.put(`auth:${clientIP}`, String(count), { expirationTtl: 900 })
+        const remaining = Math.max(0, 10 - count)
+        return c.json({ success: false, message: 'Invalid credentials', attemptsRemaining: remaining }, 401)
+      }
+      return c.json({ success: false, message: 'Invalid credentials' }, 401)
+    }
+
+    // Clear rate limit on success
+    if (c.env.KV_RATE_LIMIT) {
+      await c.env.KV_RATE_LIMIT.delete(`auth:${clientIP}`)
+    }
+
+    // Create session in KV
+    const sessionToken = generateSessionToken()
+    const sessionData = JSON.stringify({
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      ip: clientIP,
+      userAgent: c.req.header('User-Agent') || 'unknown'
+    })
+
+    if (c.env.KV_SESSIONS) {
+      await c.env.KV_SESSIONS.put(`session:${sessionToken}`, sessionData, {
+        expirationTtl: 7 * 24 * 60 * 60
+      })
+    }
+
+    const isProd = c.env.ENVIRONMENT === 'production'
+    const cookieFlags = `HttpOnly; Path=/; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}${isProd ? '; Secure' : ''}`
+
+    return c.json(
+      { success: true, redirect: '/dashboard.html' },
+      200,
+      { 'Set-Cookie': `NMLR_SESSION=${sessionToken}; ${cookieFlags}` }
+    )
   } catch (e) {
     return c.json({ success: false, message: 'Malformed request' }, 400)
   }
+})
+
+app.post('/auth/logout', async (c) => {
+  const cookies = c.req.header('Cookie') || ''
+  const sessionToken = cookies
+    .split(';')
+    .map(s => s.trim())
+    .find(s => s.startsWith('NMLR_SESSION='))
+    ?.split('=')[1]
+
+  if (sessionToken && c.env.KV_SESSIONS) {
+    await c.env.KV_SESSIONS.delete(`session:${sessionToken}`)
+  }
+
+  return c.json(
+    { success: true },
+    200,
+    { 'Set-Cookie': 'NMLR_SESSION=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict' }
+  )
 })
 
 app.get('/books', async (c) => {

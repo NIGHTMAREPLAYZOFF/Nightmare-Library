@@ -32,40 +32,42 @@ const PUBLIC_PATHS = [
   '/',
   '/index.html',
   '/api/auth',
-  '/frontend/assets/favicon.svg',
-  '/frontend/assets/broken-image.svg'
+  '/assets/favicon.svg',
+  '/assets/broken-image.svg',
+  '/css/',
+  '/js/'
 ];
 
 // Routes that require authentication
 const PROTECTED_PATHS = [
   '/dashboard',
+  '/dashboard.html',
   '/reader',
-  '/frontend/dashboard.html',
-  '/frontend/reader.html',
-  '/frontend/scripts/',
-  '/frontend/styles/',
+  '/reader.html',
   '/api/'
 ];
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { request, env, next } = context;
   const url = new URL(request.url);
-  let path = url.pathname;
+  const path = url.pathname;
 
-  // Normalize dashboard and reader routes to serve HTML
-  if (path === '/dashboard') {
-    path = '/frontend/dashboard.html';
-  } else if (path === '/reader') {
-    path = '/frontend/reader.html';
+  // Allow all static assets without auth check
+  if (
+    path.startsWith('/css/') ||
+    path.startsWith('/js/') ||
+    path.startsWith('/assets/')
+  ) {
+    return next();
   }
 
   // Allow public paths
-  if (PUBLIC_PATHS.some(p => path === p || path.startsWith('/frontend/assets/'))) {
+  if (PUBLIC_PATHS.some(p => path === p || path.startsWith(p))) {
     return next();
   }
 
   // Check for session cookie on protected routes
-  if (PROTECTED_PATHS.some(p => path.startsWith(p)) || path === '/frontend/dashboard.html' || path === '/frontend/reader.html') {
+  if (PROTECTED_PATHS.some(p => path === p || path.startsWith(p))) {
     const cookies = request.headers.get('Cookie') || '';
     const sessionToken = cookies
       .split(';')
@@ -84,9 +86,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return Response.redirect(new URL('/', request.url).toString(), 302);
     }
 
-    // Validate session
+    // Validate session — keys are stored with "session:" prefix
     try {
-      const sessionData = await env.KV_SESSIONS.get(sessionToken);
+      const sessionData = await env.KV_SESSIONS.get(`session:${sessionToken}`);
       if (!sessionData) {
         // Session expired or invalid
         if (path.startsWith('/api/')) {
@@ -107,7 +109,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
       // Check if session expired
       if (session.expiresAt && Date.now() > session.expiresAt) {
-        await env.KV_SESSIONS.delete(sessionToken);
+        await env.KV_SESSIONS.delete(`session:${sessionToken}`);
         if (path.startsWith('/api/')) {
           return new Response(JSON.stringify({ success: false, message: 'Session expired' }), {
             status: 401,
@@ -120,7 +122,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       // Validate IP and User Agent for session hijacking protection
       if (session.ip !== clientIP || session.userAgent !== userAgent) {
         // Session potentially hijacked - invalidate it
-        await env.KV_SESSIONS.delete(sessionToken);
+        await env.KV_SESSIONS.delete(`session:${sessionToken}`);
         if (path.startsWith('/api/')) {
           return new Response(JSON.stringify({ success: false, message: 'Session invalid' }), {
             status: 401,
